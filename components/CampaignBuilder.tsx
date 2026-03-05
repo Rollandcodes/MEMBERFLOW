@@ -168,7 +168,7 @@ export default function CampaignBuilder() {
           ))}
           
           <Button 
-            variant="dashed" 
+            variant="outline" 
             className="w-full border-2 border-dashed border-indigo-200 text-indigo-600 hover:bg-indigo-50 py-8 text-lg font-medium transition-all"
             onClick={addStep}
           >

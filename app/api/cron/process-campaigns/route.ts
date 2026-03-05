@@ -9,7 +9,16 @@ import { sendWhopDM } from '@/lib/whop';
  * Goal: Check all active campaigns, find eligible members based on triggers, and send DMs.
  */
 export async function GET(req: Request) {
-    // In production, verify Vercel Cron Secret
+    // Vercel Free-tier workaround: prevent deployment failures if CRON_SECRET is missing in Vercel environment
+    if (process.env.VERCEL === '1' && !process.env.CRON_SECRET) {
+        console.warn('Automation Engine: CRON_SECRET is not defined. Skipping execution.');
+        return NextResponse.json({ 
+            message: 'Cron execution skipped: CRON_SECRET not configured.',
+            timestamp: new Date().toISOString()
+        }, { status: 200 });
+    }
+
+    // In production, verify Vercel Cron Secret (or manually passed secret)
     const authHeader = req.headers.get('authorization');
     if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
