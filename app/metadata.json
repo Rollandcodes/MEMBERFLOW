@@ -1,0 +1,27 @@
+{
+  "name": "MemberFlow",
+  "tagline": "Automate onboarding & retention for paid communities",
+  "short_description": "Automated DM + onboarding sequences that increase member activation and reduce churn",
+  "long_description": "MemberFlow automates welcome messages, drip sequences, and retention flows for creators. Connect your community, pick or generate a campaign, and MemberFlow sends targeted lifecycle messages on triggers (join, inactivity, upgrade). Built as a lightweight SaaS to increase retention and revenue without manual outreach.",
+  "experience_path": "/experience/[experienceId]",
+  "discover_path": "/app/discover",
+  "dashboard_path": "/app/dashboard",
+  "permissions": [
+    {
+      "scope": "members:read",
+      "justification": "List members so creators can target and segment their community"
+    },
+    {
+      "scope": "members:write",
+      "justification": "Send DMs and apply tags/roles as part of onboarding sequences"
+    },
+    {
+      "scope": "billing:read",
+      "justification": "Show subscription status for members (optional analytics)"
+    },
+    {
+      "scope": "webhooks:manage",
+      "justification": "Register webhook endpoints to receive real-time member events"
+    }
+  ]
+}
