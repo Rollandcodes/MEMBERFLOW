@@ -3,16 +3,17 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Send, 
-  BarChart3, 
-  CreditCard, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Send,
+  BarChart3,
+  CreditCard,
+  Settings,
   Compass,
   Zap,
-  LogOut
+  LogOut,
+  Tag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const navItems = [
   { name: 'Campaigns', href: '/app/campaigns', icon: Send },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   { name: 'Billing', href: '/app/billing', icon: CreditCard },
+  { name: 'Pricing', href: '/pricing', icon: Tag },
 ];
 
 export default function NavigationSidebar() {
@@ -49,8 +51,8 @@ export default function NavigationSidebar() {
               href={item.href}
               className={cn(
                 "flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group",
-                isActive 
-                  ? "bg-indigo-50 text-indigo-600 shadow-sm" 
+                isActive
+                  ? "bg-indigo-50 text-indigo-600 shadow-sm"
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
               )}
             >

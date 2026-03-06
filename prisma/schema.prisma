@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id         String   @id @default(cuid())
+  whopUserId String   @unique // Important: This is the user ID from Whop OAuth
+  email      String?  @unique
+  name       String?
+  plan       String   @default("free")
+  
+  // OAuth Tokens for sending DMs on creator's behalf
+  accessToken  String?
+  refreshToken String?
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  members    Member[]
+  campaigns  Campaign[]
+}
+
+model Member {
+  id              String   @id @default(cuid())
+  whopMemberId    String   @unique
+  companyId       String
+  username        String?
+  status          String   @default("active") // active, inactive
+  joinedAt        DateTime @default(now())
+  
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  messageLogs     MessageLog[]
+
+  @@index([companyId])
+}
+
+model Campaign {
+  id          String   @id @default(cuid())
+  companyId   String
+  name        String   // e.g. "Welcome DM Sequence"
+  isActive    Boolean  @default(true)
+  triggerType String   // e.g. "membership.activated"
+  messageText String   // The template body
+  delayHours  Int      @default(0) // 0 means instant
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  messageLogs MessageLog[]
+
+  @@index([companyId])
+}
+
+model MessageLog {
+  id          String   @id @default(cuid())
+  campaignId  String
+  memberId    String
+  status      String   // pending, sent, failed
+  sentAt      DateTime?
+  error       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  // A member should only receive a specific campaign once
+  @@unique([campaignId, memberId])
+  @@index([memberId])
+  @@index([status])
+}
