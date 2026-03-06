@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import OnboardingChecklist from "./OnboardingChecklist";
-import { supabase } from "@/lib/db";
+import prisma from "@/lib/prisma";
 import { Zap } from "lucide-react";
 
 interface ExperiencePageProps {
@@ -10,12 +10,11 @@ interface ExperiencePageProps {
 
 async function getCommunityName(experienceId: string): Promise<string | null> {
   try {
-    const { data } = await supabase
-      .from("Company")
-      .select("name")
-      .eq("whopUserId", experienceId)
-      .single();
-    return data?.name ?? null;
+    const company = await prisma.company.findUnique({
+      where: { whopUserId: experienceId },
+      select: { name: true },
+    });
+    return company?.name ?? null;
   } catch {
     return null;
   }

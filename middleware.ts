@@ -19,7 +19,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        // Apply middleware to /app and its sub-paths
         "/app/:path*",
+        "/dashboard/:path*",
     ],
 };
