@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     try {
         // 1. Exchange the authorisation code for access and refresh tokens
-        const tokenRes = await fetch("https://whop.com/oauth/token", {
+        const tokenRes = await fetch("https://api.whop.com/v5/oauth/token", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

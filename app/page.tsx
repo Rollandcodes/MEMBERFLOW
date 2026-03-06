@@ -1,7 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Zap, Users, BarChart3, MessageSquare } from 'lucide-react';
+import { ArrowRight, Zap, BarChart3, MessageSquare } from 'lucide-react';
+
+const whopOAuthUrl = `https://api.whop.com/oauth?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_WHOP_REDIRECT_URI ?? '')}&response_type=code&scope=openid`;
 
 export default function LandingPage() {
   return (
@@ -18,6 +20,12 @@ export default function LandingPage() {
           <Link className="text-sm font-medium hover:text-indigo-600 transition-colors" href="#features">
             Features
           </Link>
+          <a
+            href={whopOAuthUrl}
+            className="text-sm font-medium bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Connect with Whop
+          </a>
         </nav>
       </header>
       <main className="flex-1">
@@ -32,18 +40,25 @@ export default function LandingPage() {
                   Automated DM + onboarding sequences that increase member activation and reduce churn. Connect your community and start growing today.
                 </p>
               </div>
-              <div className="space-x-4">
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-6 rounded-2xl text-lg font-bold shadow-xl shadow-indigo-200" asChild>
-                  <Link href="/app/dashboard">
-                    Get Started Free
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <a
+                  href={whopOAuthUrl}
+                  className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-indigo-200 transition-colors"
+                >
+                  Connect with Whop
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </a>
+                <Link
+                  href="/app/dashboard"
+                  className="inline-flex items-center justify-center border border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-8 py-4 rounded-2xl text-lg font-semibold transition-colors"
+                >
+                  View Dashboard
+                </Link>
               </div>
             </div>
           </div>
         </section>
-        
+
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-white">
           <div className="container px-4 md:px-6">
             <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">

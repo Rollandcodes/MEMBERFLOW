@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from "react";
 import OnboardingChecklist from "./OnboardingChecklist";
 import prisma from "@/lib/prisma";
