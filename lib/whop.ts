@@ -6,6 +6,35 @@ const WHOP_API_KEY = process.env.WHOP_API_KEY;
 const WHOP_COMPANY_ID = process.env.WHOP_COMPANY_ID;
 const WHOP_WEBHOOK_SECRET = process.env.WHOP_WEBHOOK_SECRET;
 
+// --- New Customer Keys ---
+const WHOP_CUSTOMER_USER_ID = process.env.WHOP_CUSTOMER_USER_ID;
+const WHOP_CUSTOMER_SECRET = process.env.WHOP_CUSTOMER_SECRET;
+const WHOP_WEBHOOK_URL = process.env.WHOP_WEBHOOK_URL;
+
+/**
+ * Demo: Uses Customer Secret to authenticate as a specific app user/bot.
+ * This is useful for building client-side integrations or specialized bot actions.
+ */
+export async function fetchCustomerProfile() {
+    if (!WHOP_CUSTOMER_SECRET || !WHOP_CUSTOMER_USER_ID) {
+        console.warn('Customer credentials missing.');
+        return null;
+    }
+
+    const response = await fetch(`https://api.whop.com/v1/users/${WHOP_CUSTOMER_USER_ID}`, {
+        headers: {
+            'Authorization': `Bearer ${WHOP_CUSTOMER_SECRET}`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Whop Customer API Error: ${response.statusText}`);
+    }
+
+    return await response.json();
+}
+
 /**
  * Fetch all members for the community with pagination support.
  */

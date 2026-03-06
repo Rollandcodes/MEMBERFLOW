@@ -12,8 +12,8 @@ vi.mock('../lib/messaging', () => ({
 describe('Cron Handler', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        process.env.CRON_SECRET = 'test_secret';
-        process.env.NODE_ENV = 'production';
+        vi.stubEnv('CRON_SECRET', 'test_secret');
+        vi.stubEnv('NODE_ENV', 'production');
     });
 
     it('should return 401 if unauthorized', async () => {

@@ -8,8 +8,13 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: NextRequest) {
+    let community_type, creator_niche, campaign_goal, audience;
     try {
-        const { community_type, creator_niche, campaign_goal, audience } = await req.json();
+        const body = await req.json();
+        community_type = body.community_type;
+        creator_niche = body.creator_niche;
+        campaign_goal = body.campaign_goal;
+        audience = body.audience;
 
         const prompt = `
             You are a community automation expert. Generate a multi-step JSON onboarding/retention campaign for a Whop community.
