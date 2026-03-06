@@ -36,7 +36,7 @@ export default function AnalyticsCharts() {
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Analytics Dashboard</h1>
           <p className="text-muted-foreground">Track the impact of your community automation campaigns.</p>
         </div>
         <div className="flex gap-2">
@@ -100,49 +100,6 @@ export default function AnalyticsCharts() {
                 <Bar dataKey="sent" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Messages Sent" />
               </AreaChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-slate-100">
-          <CardHeader>
-            <CardTitle className="flex items-center text-lg">
-              <Target className="mr-2 h-5 w-5 text-indigo-500" />
-              Goal Completion by Campaign
-            </CardTitle>
-            <CardDescription>Which campaigns are driving the most results.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={[
-                    { name: 'Welcome', value: 45 },
-                    { name: 'Onboarding', value: 25 },
-                    { name: 'Retention', value: 20 },
-                    { name: 'Upsell', value: 10 },
-                  ]}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {COLORS.map((color, index) => (
-                    <Cell key={`cell-${index}`} fill={color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex justify-center gap-6 mt-4">
-              {['Welcome', 'Onboarding', 'Retention', 'Upsell'].map((label, i) => (
-                <div key={label} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: COLORS[i]}} />
-                  <span className="text-xs font-medium text-slate-600">{label}</span>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </div>

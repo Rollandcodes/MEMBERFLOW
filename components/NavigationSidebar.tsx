@@ -8,65 +8,79 @@ import {
   Users, 
   Send, 
   BarChart3, 
-  Settings,
+  CreditCard, 
+  Settings, 
+  Compass,
+  Zap,
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
-  { name: 'Campaigns', href: '/app/campaigns', icon: Send },
+  { name: 'Discover', href: '/app/discover', icon: Compass },
   { name: 'Members', href: '/app/members', icon: Users },
+  { name: 'Campaigns', href: '/app/campaigns', icon: Send },
   { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
-  { name: 'Billing', href: '/app/billing', icon: Settings },
+  { name: 'Billing', href: '/app/billing', icon: CreditCard },
 ];
 
 export default function NavigationSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-col w-64 bg-white border-r border-gray-200 min-h-screen">
-      <div className="flex items-center justify-center h-16 border-b border-gray-200">
-        <span className="text-xl font-bold text-indigo-600">MemberFlow</span>
+    <div className="w-72 bg-white border-r border-gray-100 flex flex-col h-full shadow-sm">
+      <div className="p-8">
+        <Link href="/app/dashboard" className="flex items-center gap-3 group">
+          <div className="h-10 w-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-105 transition-transform">
+            <Zap className="h-6 w-6 text-white" />
+          </div>
+          <span className="text-xl font-black text-gray-900 tracking-tight">MemberFlow</span>
+        </Link>
       </div>
-      <div className="flex flex-col flex-1 overflow-y-auto pt-4">
-        <nav className="flex-1 px-2 space-y-1">
-          {navItems.map((item) => (
+
+      <nav className="flex-1 px-4 space-y-2">
+        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-4 mb-4">Main Menu</div>
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
             <Link
               key={item.name}
               href={item.href}
               className={cn(
-                "group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                pathname === item.href
-                  ? "bg-indigo-50 text-indigo-700"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                "flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-bold transition-all group",
+                isActive 
+                  ? "bg-indigo-50 text-indigo-600 shadow-sm" 
+                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
               )}
             >
-              <item.icon
-                className={cn(
-                  "mr-3 flex-shrink-0 h-5 w-5",
-                  pathname === item.href ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-500"
-                )}
-              />
+              <item.icon className={cn(
+                "h-5 w-5 transition-colors",
+                isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-900"
+              )} />
               {item.name}
+              {isActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-indigo-600" />}
             </Link>
-          ))}
-        </nav>
-      </div>
-      <div className="flex-shrink-0 flex flex-col border-t border-gray-200 p-4 gap-4">
-        <div className="flex items-center w-full">
-          <div className="ml-3 flex-1">
-            <p className="text-sm font-medium text-gray-700">Creator Account</p>
-            <Link href="/" className="text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center">
-              <LogOut className="mr-1 h-3 w-3" />
-              Sign out
-            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 mt-auto">
+        <div className="bg-indigo-50 rounded-3xl p-6 mb-6">
+          <div className="text-sm font-black text-indigo-900 mb-1">Pro Plan</div>
+          <div className="text-xs text-indigo-600 font-bold mb-4">Unlimited members & AI</div>
+          <div className="w-full bg-indigo-200 rounded-full h-1.5 mb-4">
+            <div className="bg-indigo-600 h-1.5 rounded-full w-3/4" />
           </div>
+          <button className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors">
+            Upgrade Now
+          </button>
         </div>
-        <div className="flex flex-col gap-1 px-3 border-t border-gray-50 pt-3">
-          <Link href="/privacy" className="text-[10px] uppercase tracking-wider font-bold text-gray-400 hover:text-indigo-600 transition-colors">Privacy Policy</Link>
-          <Link href="/terms" className="text-[10px] uppercase tracking-wider font-bold text-gray-400 hover:text-indigo-600 transition-colors">Terms of Service</Link>
-        </div>
+
+        <button className="flex items-center gap-3 px-4 py-3.5 w-full text-left text-sm font-bold text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-2xl transition-all group">
+          <LogOut className="h-5 w-5 text-gray-400 group-hover:text-red-600 transition-colors" />
+          Sign Out
+        </button>
       </div>
     </div>
   );
