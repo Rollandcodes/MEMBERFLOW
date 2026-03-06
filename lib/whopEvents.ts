@@ -16,8 +16,6 @@ export async function handleWhopEvent(payload: any) {
     }
 
     // 1. Find the user (creator) by company_id
-    // For now, we'll try to find a user with this whop_company_id or fall back to the first one for testing.
-    // In a production SaaS, users would have a whop_company_id column.
     const companyId = payload.company_id;
     let userId: string | null = null;
 
@@ -25,7 +23,7 @@ export async function handleWhopEvent(payload: any) {
         const { data: userData } = await supabase
             .from('users')
             .select('id')
-            .eq('whop_user_id', companyId) // Assuming whop_user_id might store company_id or we'd have a separate column
+            .eq('whop_user_id', companyId) 
             .maybeSingle();
         
         if (userData) {
@@ -33,7 +31,7 @@ export async function handleWhopEvent(payload: any) {
         }
     }
 
-    // Fallback logic if we can't find a user (not ideal for multi-tenant, but safe for initial setup)
+    // Fallback logic if we can't find a user
     if (!userId) {
         const { data: firstUser } = await supabase.from('users').select('id').limit(1).maybeSingle();
         userId = firstUser?.id || null;
@@ -79,9 +77,20 @@ export async function handleWhopEvent(payload: any) {
     }
 
     // 4. For each active campaign, create logs for its steps
-    // We only create logs for steps with delay_days = 0 immediately.
-    // Steps with delay_days > 0 will be picked up by the Cron job.
     for (const campaign of activeCampaigns) {
+        // Evaluate cancel logic if membership is deleted/cancelled
+        if (eventType === 'membership.cancelled' || eventType === 'membership.deleted') {
+            await supabase
+                .from('message_logs')
+                .update({ status: 'cancelled' })
+                .eq('member_id', member.id)
+                .eq('campaign_id', campaign.id)
+                .eq('status', 'pending');
+            
+            console.info(`Cancelled pending messages for member ${member.id} due to ${eventType}.`);
+            continue;
+        }
+
         for (const step of campaign.campaign_steps) {
             // Check if this step was already logged to prevent duplicates (Idempotency)
             const { data: existingLog } = await supabase
@@ -93,15 +102,15 @@ export async function handleWhopEvent(payload: any) {
 
             if (existingLog) continue;
 
-            // Log the step. If delay_days is 0, it will be marked for immediate processing
-            // In a more complex system, we might mark it as 'pending' and let the cron handle it.
-            // For now, let's just create the log.
+            // Log the step for the scheduler to pick up
             await supabase
                 .from('message_logs')
                 .insert({
                     member_id: member.id,
+                    campaign_id: campaign.id,
                     campaign_step_id: step.id,
-                    status: step.delay_days === 0 ? 'pending' : 'scheduled'
+                    status: 'pending',
+                    scheduled_for: new Date(Date.now() + (step.delay_days || 0) * 86400000).toISOString()
                 });
         }
     }
