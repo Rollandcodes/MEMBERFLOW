@@ -1,123 +1,48 @@
-/// <reference types="node" />
-import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/db';
-import { sendWhopDM } from '@/lib/whop';
+import { NextRequest, NextResponse } from 'next/server';
+import { runCampaignScheduler } from '@/lib/messaging';
 
 /**
- * Automation Engine (Cron Job)
- * Trigger: Every hour (Vercel Cron)
- * Goal: Check all active campaigns, find eligible members based on triggers, and send DMs.
+ * Production-ready Cron Handler
+ * Path: /api/cron/process-campaigns
+ * Schedule: Defined in vercel.json (0 * * * *)
  */
-export async function GET(req: Request) {
-    // Vercel Free-tier workaround: prevent deployment failures if CRON_SECRET is missing in Vercel environment
-    if (process.env.VERCEL === '1' && !process.env.CRON_SECRET) {
-        console.warn('Automation Engine: CRON_SECRET is not defined. Skipping execution.');
-        return NextResponse.json({ 
-            message: 'Cron execution skipped: CRON_SECRET not configured.',
-            timestamp: new Date().toISOString()
-        }, { status: 200 });
-    }
-
-    // In production, verify Vercel Cron Secret (or manually passed secret)
-    const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+export async function GET(req: NextRequest) {
     try {
-        let messagesSent = 0;
-        const now = new Date();
+        // 1. Security Check: verify Vercel Cron Secret (or manually passed secret)
+        // Vercel passes the secret in the Authorization header: Bearer <CRON_SECRET>
+        const authHeader = req.headers.get('authorization');
+        const cronSecret = process.env.CRON_SECRET;
 
-        // 1. Fetch all active campaigns and their steps
-        const { data: campaigns, error: campaignError } = await supabase
-            .from('campaigns')
-            .select('*, campaign_steps(*)')
-            .eq('is_active', true);
-
-        if (campaignError) throw campaignError;
-
-        for (const campaign of campaigns) {
-            // 2. Fetch members for this creator's community
-            const { data: members, error: memberError } = await supabase
-                .from('members')
-                .select('*')
-                .eq('user_id', campaign.user_id)
-                .eq('status', 'active'); // For most triggers, we only care about active members
-
-            if (memberError) {
-                console.error(`Member fetch error for user ${campaign.user_id}:`, memberError);
-                continue;
-            }
-
-            for (const member of members) {
-                // 3. Evaluate each step of the campaign
-                for (const step of campaign.campaign_steps) {
-                    const joinDate = new Date(member.joined_at);
-                    const daysSinceJoined = Math.floor((now.getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
-
-                    // Trigger Logic: 
-                    // - Onboarding (member_joined): check delay_days relative to join_date
-                    // - Cancellation: check relative to status change (needs extra column)
-                    // - For now, we use the primary 'member_joined' flow as requested.
-
-                    if (daysSinceJoined >= step.delay_days) {
-                        // 4. Idempotency Check: ensure we haven't sent this step to this member already
-                        const { data: log, error: logError } = await supabase
-                            .from('message_logs')
-                            .select('*')
-                            .eq('member_id', member.id)
-                            .eq('campaign_step_id', step.id)
-                            .maybeSingle();
-
-                        if (logError) {
-                            console.error(`Log check error for member ${member.id}:`, logError);
-                            continue;
-                        }
-
-                        if (!log) { // Not sent yet!
-                            // 5. Send DM via Whop
-                            // Note: we can replace variables like {name} here
-                            const personalizedMessage = step.message_content
-                                .replace(/{name}/g, member.whop_member_id) // Ideally, we'd have their real name
-                                .replace(/{tier}/g, member.tier || 'Community');
-
-                            try {
-                                await sendWhopDM(member.whop_member_id, personalizedMessage);
-
-                                // 6. Log the successful message
-                                await supabase
-                                    .from('message_logs')
-                                    .insert({
-                                        member_id: member.id,
-                                        campaign_step_id: step.id,
-                                        status: 'sent'
-                                    });
-                                
-                                messagesSent++;
-                            } catch (dmError: any) {
-                                console.error(`Failed to send DM to member ${member.id}:`, dmError.message);
-                                // Log failure for retry logic
-                                await supabase
-                                    .from('message_logs')
-                                    .insert({
-                                        member_id: member.id,
-                                        campaign_step_id: step.id,
-                                        status: 'failed'
-                                    });
-                            }
-                        }
-                    }
-                }
+        // Skip security check only in non-production local dev if CRON_SECRET is missing
+        if (process.env.NODE_ENV === 'production' || cronSecret) {
+            if (authHeader !== `Bearer ${cronSecret}`) {
+                console.warn('[Cron] Unauthorized attempt to trigger scheduler.');
+                return new Response('Unauthorized', { status: 401 });
             }
         }
 
-        return NextResponse.json({ 
-            success: true, 
-            messages_sent: messagesSent,
-            timestamp: now.toISOString()
-        });
+        console.info('[Cron] Starting campaign processing sequence.');
+
+        // 2. Invoke the Campaign Scheduler
+        // This function handles its own internal idempotency via database logs.
+        const result = await runCampaignScheduler();
+
+        console.info(`[Cron] Scheduler execution completed successfully. Messages sent: ${result.messagesSent}`);
+
+        // 3. Standardized Success Response
+        return NextResponse.json({ ok: true, messagesSent: result.messagesSent });
+
     } catch (error: any) {
-        console.error('Automation Engine Error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        // 4. Detailed Error Logging
+        console.error('[Cron] Fatal error during campaign execution:');
+        console.error(error.stack || error);
+
+        // 5. Plain-text error response as requested for cron monitors
+        return new Response('error', { status: 500 });
     }
 }
+
+// Ensure the endpoint is only reachable via GET
+export async function POST() { return new Response('Method Not Allowed', { status: 405 }); }
+export async function PUT() { return new Response('Method Not Allowed', { status: 405 }); }
+export async function DELETE() { return new Response('Method Not Allowed', { status: 405 }); }

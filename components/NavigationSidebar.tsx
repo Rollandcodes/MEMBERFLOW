@@ -14,11 +14,11 @@ import {
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Campaigns', href: '/campaigns', icon: Send },
-  { name: 'Members', href: '/members', icon: Users },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Billing', href: '/billing', icon: Settings },
+  { name: 'Dashboard', href: '/app/dashboard', icon: LayoutDashboard },
+  { name: 'Campaigns', href: '/app/campaigns', icon: Send },
+  { name: 'Members', href: '/app/members', icon: Users },
+  { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
+  { name: 'Billing', href: '/app/billing', icon: Settings },
 ];
 
 export default function NavigationSidebar() {
@@ -53,7 +53,7 @@ export default function NavigationSidebar() {
           ))}
         </nav>
       </div>
-      <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+      <div className="flex-shrink-0 flex flex-col border-t border-gray-200 p-4 gap-4">
         <div className="flex items-center w-full">
           <div className="ml-3 flex-1">
             <p className="text-sm font-medium text-gray-700">Creator Account</p>
@@ -62,6 +62,10 @@ export default function NavigationSidebar() {
               Sign out
             </Link>
           </div>
+        </div>
+        <div className="flex flex-col gap-1 px-3 border-t border-gray-50 pt-3">
+          <Link href="/privacy" className="text-[10px] uppercase tracking-wider font-bold text-gray-400 hover:text-indigo-600 transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="text-[10px] uppercase tracking-wider font-bold text-gray-400 hover:text-indigo-600 transition-colors">Terms of Service</Link>
         </div>
       </div>
     </div>

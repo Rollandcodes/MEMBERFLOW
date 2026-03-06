@@ -67,17 +67,28 @@ export async function getWhopSubscription(subscriptionId: string) {
 }
 
 /**
- * Validate incoming webhook signatures from Whop.
+ * Validate incoming webhook signatures from Whop using HMAC-SHA256 and timing-safe comparison.
  */
-export function validateWhopWebhook(signature: string, payload: string) {
-    if (!WHOP_WEBHOOK_SECRET) return true; // Skip in dev if not set
+export function verifyWhopSignature(body: string, signature: string, secret: string): boolean {
+    if (!secret) {
+        console.warn('Webhook secret is not configured.');
+        return false;
+    }
     
     const crypto = require('crypto');
-    const hmac = crypto.createHmac('sha256', WHOP_WEBHOOK_SECRET);
-    const digest = Buffer.from(hmac.update(payload).digest('hex'), 'utf8');
-    const checksum = Buffer.from(signature, 'utf8');
-
-    return crypto.timingSafeEqual(digest, checksum);
+    const hmac = crypto.createHmac('sha256', secret);
+    const digest = hmac.update(body).digest('hex');
+    
+    // Perform timing-safe comparison to prevent side-channel attacks
+    try {
+        return crypto.timingSafeEqual(
+            Buffer.from(digest, 'utf8'),
+            Buffer.from(signature, 'utf8')
+        );
+    } catch (err) {
+        // Handle cases where buffers have different lengths
+        return false;
+    }
 }
 
 /**

@@ -1,67 +1,62 @@
 /// <reference types="node" />
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
-import { validateWhopWebhook, EVENT_MAP } from '@/lib/whop';
+import { verifyWhopSignature } from '@/lib/whop';
+import { handleWhopEvent } from '@/lib/whopEvents';
 
 export async function POST(req: NextRequest) {
     try {
         const payload = await req.text();
-        const signature = req.headers.get('whop-signature') || '';
+        const signature = req.headers.get('x-whop-signature') || '';
+        const secret = process.env.WHOP_WEBHOOK_SECRET || '';
 
         // 1. Validate the webhook signature
-        if (!validateWhopWebhook(signature, payload)) {
-            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+        if (!verifyWhopSignature(payload, signature, secret)) {
+            return NextResponse.json({ error: 'invalid signature' }, { status: 401 });
         }
 
-        const event = JSON.parse(payload);
-        const eventType = event.action; // Whop event action
-        const data = event.data;
+        let event;
+        try {
+            event = JSON.parse(payload);
+        } catch (e) {
+            return NextResponse.json({ error: 'malformed json' }, { status: 400 });
+        }
 
-        // 2. Log the webhook event
+        const eventId = event.id;
+        const action = event.action;
+
+        // 2. Log the webhook event and ensure idempotency
+        // Using upsert with event_id to prevent double processing
         const { error: logError } = await supabase
             .from('webhook_events')
-            .insert({
-                whop_event_id: event.id,
-                event_type: eventType,
-                payload: data
-            });
+            .upsert({
+                whop_event_id: eventId,
+                event_type: action,
+                payload: event,
+                processed_at: null // Will be updated after successful processing
+            }, { onConflict: 'whop_event_id' });
 
-        if (logError && logError.code !== '23505') { // Ignore duplicate events
+        if (logError) {
             console.error('Webhook log error:', logError);
+            return NextResponse.json({ error: 'Failed to log event' }, { status: 500 });
         }
 
-        // 3. Process Member-related events
-        const internalTrigger = EVENT_MAP[eventType as keyof typeof EVENT_MAP];
-        
-        if (internalTrigger && data.member_id) {
-            // Find or create member in Supabase
-            const { data: member, error: memberError } = await supabase
-                .from('members')
-                .upsert({
-                    whop_member_id: data.member_id,
-                    tier: data.tier_name || 'Free',
-                    status: data.status || 'active',
-                    joined_at: data.created_at || new Date().toISOString()
-                }, { onConflict: 'whop_member_id' })
-                .select('*')
-                .single();
-
-            if (memberError) {
-                console.error('Member sync error:', memberError);
-            } else if (member) {
-                // Check for campaigns triggered by this event
-                // This will be picked up by the Automation Engine (Cron)
-                // or we could trigger a specific "Immediate" campaign processor here.
-            }
+        // 3. Process the event
+        try {
+            await handleWhopEvent(event);
+        } catch (error: any) {
+            console.error('Event processing error:', error);
+            // We return 200 here to acknowledge receipt, even if processing failed
+            // so Whop doesn't keep retrying. We should handle errors internally.
         }
 
         // 4. Update the event as processed
         await supabase
             .from('webhook_events')
             .update({ processed_at: new Date().toISOString() })
-            .eq('whop_event_id', event.id);
+            .eq('whop_event_id', eventId);
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ ok: true });
     } catch (error: any) {
         console.error('Webhook handler error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

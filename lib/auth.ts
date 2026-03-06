@@ -20,6 +20,7 @@ export async function authenticateWhopUser(whopToken: string) {
     const whopUser = await response.json();
     const whopUserId = whopUser.id;
     const whopEmail = whopUser.email;
+    const communityName = whopUser.company?.name || 'Your Community';
 
     // Check if user exists in Supabase, if not create them
     const { data: user, error } = await supabase
@@ -38,13 +39,26 @@ export async function authenticateWhopUser(whopToken: string) {
             .from('users')
             .insert({
                 whop_user_id: whopUserId,
-                email: whopEmail
+                email: whopEmail,
+                community_name: communityName
             })
             .select('*')
             .single();
 
         if (createError) throw createError;
         return newUser;
+    }
+
+    // Update community name if it has changed
+    if (user.community_name !== communityName) {
+        const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({ community_name: communityName })
+            .eq('id', user.id)
+            .select('*')
+            .single();
+        
+        if (!updateError) return updatedUser;
     }
 
     return user;

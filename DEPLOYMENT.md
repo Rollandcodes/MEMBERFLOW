@@ -11,20 +11,26 @@ Follow these steps to deploy the upgraded MemberFlow SaaS platform to production
 - Add the following events: `membership.created`, `membership.cancelled`, `membership.updated`, `membership.expired`.
 
 ## 3. Environment Variables
-Configure these in Vercel:
+Configure these in Vercel or your `.env.local`:
 
 ```env
 # Whop
-WHOP_API_KEY=your_api_key
-WHOP_COMPANY_ID=your_company_id
-WHOP_WEBHOOK_SECRET=your_webhook_secret
+WHOP_API_KEY=sk_live_xxx
+WHOP_WEBHOOK_SECRET=whop_wh_secret
+WHOP_COMPANY_ID=cmp_xxx
 
 # Supabase
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_service_role_key
+SUPABASE_URL=https://...
+SUPABASE_KEY=...
 
-# Security
-CRON_SECRET=your_random_secret_string
+# App Config
+NEXT_PUBLIC_APP_URL=https://memberflow-eight.vercel.app
+
+# AI
+OPENAI_API_KEY=sk-...
+
+# Security & Automation
+CRON_SECRET=7b1bd2c4-8bb6-4bbd-be00-cc75853a8d8f
 ```
 
 ## 4. Deployment

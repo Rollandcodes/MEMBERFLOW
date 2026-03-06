@@ -14,7 +14,7 @@ export default function LoginPage() {
     // In a real application, you'd redirect to Whop OAuth login
     // For this example, we'll simulate it by redirecting to the dashboard
     setTimeout(() => {
-      router.push('/dashboard');
+      router.push('/app/dashboard');
     }, 1000);
   };
 
