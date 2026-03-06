@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Send, Sparkles, Clock, Layout, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, Send, Sparkles, Clock, Layout, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/db';
 
 interface CampaignStep {
   id: string;
@@ -20,6 +21,8 @@ export default function CampaignBuilder() {
     { id: '1', delay_days: 0, message_content: 'Welcome to the community! 🚀' }
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showUpsell, setShowUpsell] = useState(false);
 
   const addStep = () => {
     const newId = (steps.length + 1).toString();
@@ -39,7 +42,6 @@ export default function CampaignBuilder() {
   const generateWithAI = async () => {
     setIsGenerating(true);
     try {
-        // Step 5: AI Campaign Generator logic
         const response = await fetch('/api/campaigns/generate', {
             method: 'POST',
             body: JSON.stringify({
@@ -61,12 +63,52 @@ export default function CampaignBuilder() {
   };
 
   const saveCampaign = async () => {
-    console.log('Saving campaign:', { name, trigger, steps });
-    alert('Campaign saved successfully!');
+    setIsSaving(true);
+    try {
+      // Step F: Billing gating
+      // In a real app, we'd fetch the user's current plan and campaign count from the backend/session
+      const { data: userData } = await supabase.from('users').select('plan_id, id').limit(1).single();
+      const { count } = await supabase.from('campaigns').select('*', { count: 'exact', head: true }).eq('user_id', userData?.id);
+      
+      const { canCreateCampaign } = await import('@/lib/billing');
+      if (!canCreateCampaign(count || 0, userData?.plan_id || 'free')) {
+        setShowUpsell(true);
+        return;
+      }
+
+      console.log('Saving campaign:', { name, trigger, steps });
+      // Proceed with actual save logic...
+      alert('Campaign saved successfully!');
+    } catch (err) {
+      console.error('Save failed', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+      {showUpsell && (
+        <Card className="bg-indigo-50 border-indigo-200">
+          <CardContent className="pt-6 flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-indigo-100 p-2 rounded-full">
+                <Sparkles className="h-6 w-6 text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-indigo-900 text-lg">Upgrade to Create More Campaigns</h3>
+                <p className="text-indigo-700">You've reached your plan limit. Unlock unlimited campaigns with MemberFlow Pro.</p>
+              </div>
+            </div>
+            <Button 
+              className="bg-indigo-600 hover:bg-indigo-700"
+              onClick={() => window.open('https://whop.com/checkout/memberflow-pro', '_blank')}
+            >
+              Upgrade Now
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Campaign Builder</h1>
@@ -82,8 +124,8 @@ export default function CampaignBuilder() {
             <Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />
             {isGenerating ? 'Generating...' : 'Generate with AI'}
           </Button>
-          <Button onClick={saveCampaign} className="bg-indigo-600 hover:bg-indigo-700">
-            <Send className="mr-2 h-4 w-4" />
+          <Button onClick={saveCampaign} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700">
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
             Launch Campaign
           </Button>
         </div>
