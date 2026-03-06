@@ -1,19 +1,62 @@
 /// <reference types="node" />
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
     try {
-        const { community_type, creator_niche, campaign_goal } = await req.json();
+        const { community_type, creator_niche, campaign_goal, audience } = await req.json();
 
-        // In a production environment, you would call OpenAI here.
-        // For this implementation, we'll use a sophisticated rule-based generator 
-        // that simulates the AI response based on the inputs.
+        const prompt = `
+            You are a community automation expert. Generate a multi-step JSON onboarding/retention campaign for a Whop community.
+            Community Type: ${community_type}
+            Creator Niche: ${creator_niche}
+            Campaign Goal: ${campaign_goal}
+            Target Audience: ${audience || 'New Members'}
 
-        const prompt = `Community: ${community_type}, Niche: ${creator_niche}, Goal: ${campaign_goal}`;
+            Return a JSON object with:
+            - name: String (catchy campaign name)
+            - category: String
+            - steps: Array of objects with { delay_days: Number, message_content: String }
+            
+            Use placeholders: {name} for member name and {tier} for membership tier.
+            Keep messages concise, friendly, and high-value.
+        `;
+
+        const response = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            messages: [
+                { role: "system", content: "You are a helpful assistant that only outputs valid JSON." },
+                { role: "user", content: prompt }
+            ],
+            response_format: { type: "json_object" }
+        });
+
+        const content = response.choices[0].message.content;
+        if (!content) throw new Error("Failed to generate content");
         
-        // Simulating AI Campaign Generation
-        const generatedCampaign = {
+        const generatedCampaign = JSON.parse(content);
+
+        // Optional: Persist the generation request metadata to Supabase
+        await supabase.from('campaign_generations').insert({ 
+            community_type, 
+            creator_niche, 
+            campaign_goal,
+            generated_name: generatedCampaign.name 
+        });
+
+        return NextResponse.json({ 
+            success: true, 
+            campaign: generatedCampaign
+        });
+    } catch (error: any) {
+        console.error('AI Generator error:', error);
+        // Fallback to a sophisticated rule-based generator if OpenAI fails/is not configured
+        const fallbackCampaign = {
             name: `${community_type} ${campaign_goal} Sequence`,
             category: community_type,
             steps: [
@@ -28,26 +71,14 @@ export async function POST(req: NextRequest) {
                     delay_days: 3,
                     message_content: `Hi {name}, just checking in! How are you enjoying the ${community_type} community so far? If you have any questions about ${creator_niche}, feel free to ask!`,
                     step_order: 2
-                },
-                {
-                    id: 'step_3',
-                    delay_days: 7,
-                    message_content: `Hey {name}! You've been with us for a week now. 🚀 We'd love to hear your feedback on our ${campaign_goal} resources. Keep crushing it!`,
-                    step_order: 3
                 }
             ]
         };
 
-        // Optional: Persist the generation request metadata to Supabase
-        // await supabase.from('campaign_generations').insert({ community_type, creator_niche, campaign_goal });
-
         return NextResponse.json({ 
             success: true, 
-            campaign: generatedCampaign,
-            ai_prompt: prompt 
+            campaign: fallbackCampaign,
+            is_fallback: true
         });
-    } catch (error: any) {
-        console.error('AI Generator error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
