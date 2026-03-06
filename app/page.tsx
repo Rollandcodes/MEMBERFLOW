@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Zap, BarChart3, MessageSquare } from 'lucide-react';
 
-const whopOAuthUrl = `https://api.whop.com/oauth?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_WHOP_REDIRECT_URI ?? '')}&response_type=code&scope=openid`;
+const oauthUrl = `https://api.whop.com/v5/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://memberflow-eight.vercel.app/api/auth/callback')}&response_type=code&scope=openid`;
 
 export default function LandingPage() {
   return (
@@ -21,7 +21,7 @@ export default function LandingPage() {
             Features
           </Link>
           <a
-            href={whopOAuthUrl}
+            href={oauthUrl}
             className="text-sm font-medium bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Connect with Whop
@@ -42,7 +42,7 @@ export default function LandingPage() {
               </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
-                  href={whopOAuthUrl}
+                  href={oauthUrl}
                   className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-indigo-200 transition-colors"
                 >
                   Connect with Whop

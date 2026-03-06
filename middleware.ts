@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-    // Check if navigating to any /app path (the dashboard routes)
-    if (request.nextUrl.pathname.startsWith("/app")) {
+    // Check if navigating to any /app or /dashboard path
+    if (request.nextUrl.pathname.startsWith("/app") || request.nextUrl.pathname.startsWith("/dashboard")) {
         // Check for the auth cookie
         const hasCompanyId = request.cookies.has("memberflow_company_id");
 
