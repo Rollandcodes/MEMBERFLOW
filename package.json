@@ -7,22 +7,25 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "vitest run",
     "postinstall": "prisma generate"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "overrides": {
+    "@prisma/adapter-libsql": "5.22.0"
+  },
   "dependencies": {
-    "@libsql/client": "^0.17.0",
-    "@prisma/adapter-libsql": "^7.4.2",
-    "@prisma/client": "^5.22.0",
+    "@libsql/client": "0.14.0",
+    "@prisma/adapter-libsql": "5.22.0",
+    "@prisma/client": "5.22.0",
     "@radix-ui/react-slot": "^1.2.4",
-    "@supabase/supabase-js": "^2.98.0",
-    "@whop-sdk/core": "^0.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.577.0",
-    "next": "^14.1.0",
-    "openai": "^6.27.0",
-    "prisma": "^5.22.0",
+    "next": "14.1.0",
+    "openai": "^4.77.0",
+    "prisma": "5.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.15.4",
@@ -30,16 +33,14 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@types/node": "^20.19.35",
-    "@types/react": "^18.3.28",
-    "@types/react-dom": "^18.3.7",
-    "@vitest/ui": "^4.0.18",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5",
-    "vitest": "^4.0.18"
+    "typescript": "^5"
   }
 }
