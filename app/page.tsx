@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Zap, BarChart3, MessageSquare } from 'lucide-react';
 
-const oauthUrl = `https://api.whop.com/v5/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://memberflow-eight.vercel.app/api/auth/callback')}&response_type=code&scope=openid`;
+const oauthUrl = `https://api.whop.com/v5/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=https%3A%2F%2Fmemberflow-eight.vercel.app%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid`;
 
 export default function LandingPage() {
   return (

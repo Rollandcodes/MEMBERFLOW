@@ -1,122 +1,101 @@
-export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic'
 
-import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+import prisma from '@/lib/prisma'
 
-export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const code = searchParams.get("code");
-    const error = searchParams.get("error");
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams
+    const code = searchParams.get('code')
+    const error = searchParams.get('error')
 
-    if (error) {
-        console.error(`[MemberFlow Auth] Error from Whop: ${error}`);
-        return NextResponse.redirect(new URL("/?error=auth_failed", req.url));
-    }
+    console.log('[Callback] code:', code, 'error:', error)
 
-    if (!code) {
-        return NextResponse.redirect(new URL("/?error=missing_code", req.url));
-    }
-
-    const clientId = process.env.WHOP_CLIENT_ID;
-    const clientSecret = process.env.WHOP_CLIENT_SECRET;
-    const redirectUri = process.env.WHOP_REDIRECT_URI;
-
-    if (!clientId || !clientSecret || !redirectUri) {
-        console.error("[MemberFlow Auth] Missing OAuth environment variables");
-        return NextResponse.redirect(new URL("/?error=server_config", req.url));
+    if (error || !code) {
+        console.log('[Callback] No code or error param:', error)
+        return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
     }
 
     try {
-        // 1. Exchange the authorisation code for access and refresh tokens
-        const tokenRes = await fetch("https://api.whop.com/v5/oauth/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+        // Step 1: Exchange code for token
+        const tokenRes = await fetch('https://api.whop.com/v5/oauth/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-                grant_type: "authorization_code",
                 code,
-                client_id: clientId,
-                client_secret: clientSecret,
-                redirect_uri: redirectUri,
+                client_id: process.env.WHOP_CLIENT_ID,
+                client_secret: process.env.WHOP_CLIENT_SECRET,
+                redirect_uri: 'https://memberflow-eight.vercel.app/api/auth/callback',
+                grant_type: 'authorization_code',
             }),
-        });
+        })
+
+        const tokenText = await tokenRes.text()
+        console.log('[Callback] Token response status:', tokenRes.status)
+        console.log('[Callback] Token response body:', tokenText)
 
         if (!tokenRes.ok) {
-            const errorText = await tokenRes.text();
-            console.error(`[MemberFlow Auth] Token exchange failed: ${errorText}`);
-            return NextResponse.redirect(new URL("/?error=token_exchange", req.url));
+            console.error('[Callback] Token exchange failed:', tokenText)
+            return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
         }
 
-        const tokens = await tokenRes.json();
-        const { access_token, refresh_token } = tokens;
+        const tokenData = JSON.parse(tokenText)
+        const accessToken = tokenData.access_token
 
-        // 2. Use the access token to get the user's Whop ID and Profile
-        const userRes = await fetch("https://api.whop.com/v5/me", {
+        if (!accessToken) {
+            console.error('[Callback] No access_token in response:', tokenData)
+            return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
+        }
+
+        // Step 2: Get company info
+        const companyRes = await fetch('https://api.whop.com/v5/companies/me', {
             headers: {
-                Authorization: `Bearer ${access_token}`,
+                Authorization: `Bearer ${accessToken}`,
             },
-        });
+        })
 
-        if (!userRes.ok) {
-            console.error("[MemberFlow Auth] Failed to fetch user profile");
-            return NextResponse.redirect(new URL("/?error=fetch_profile", req.url));
+        const companyText = await companyRes.text()
+        console.log('[Callback] Company response status:', companyRes.status)
+        console.log('[Callback] Company response body:', companyText)
+
+        let whopCompanyId = 'unknown'
+        let companyName = 'My Company'
+
+        if (companyRes.ok) {
+            const companyData = JSON.parse(companyText)
+            whopCompanyId = companyData.id || companyData.company_id || 'unknown'
+            companyName = companyData.title || companyData.name || 'My Company'
         }
 
-        const userData = await userRes.json();
-
-        // In Whop V5, the user object is usually returned directly or inside a `data` wrap
-        const user = userData.id ? userData : userData.data;
-
-        // 3. Upsert the Company (the Creator) in our database
+        // Step 3: Save to database
         const company = await prisma.company.upsert({
-            where: { whopUserId: user.id },
+            where: { whopUserId: whopCompanyId },
+            update: { accessToken, name: companyName },
             create: {
-                whopUserId: user.id,
-                email: user.email || null,
-                name: user.username || "Creator",
-                accessToken: access_token,
-                refreshToken: refresh_token,
+                whopUserId: whopCompanyId,
+                email: 'creator@whop.com',
+                name: companyName,
+                accessToken,
             },
-            update: {
-                email: user.email || null,
-                name: user.username || "Creator",
-                accessToken: access_token,
-                refreshToken: refresh_token,
-            },
-        });
+        })
 
-        // 4. Create a default Welcome Campaign if they don't have one
-        const existingCampaigns = await prisma.campaign.count({
-            where: { companyId: company.id },
-        });
-
-        if (existingCampaigns === 0) {
-            await prisma.campaign.create({
-                data: {
-                    companyId: company.id,
-                    name: "Welcome DM",
-                    triggerType: "membership.activated",
-                    messageText: "Hey {{first_name}} 👋 Welcome to {{product_name}}! So glad to have you here.",
-                    delayHours: 0,
-                },
-            });
-        }
-
-        // 5. Set authentication cookie & redirect to dashboard
-        const response = NextResponse.redirect(new URL("/app/dashboard", req.url));
-
-        response.cookies.set({
-            name: "memberflow_company_id",
-            value: company.id,
+        // Step 4: Set cookie and redirect
+        const cookieStore = cookies()
+        cookieStore.set('memberflow_company_id', company.id, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            path: "/",
-            maxAge: 60 * 60 * 24 * 30, // 30 days
-        });
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 30,
+            path: '/',
+        })
 
-        return response;
+        console.log('[Callback] Success! Redirecting to dashboard')
+        return NextResponse.redirect(new URL('/app/dashboard', request.url))
+
     } catch (err) {
-        console.error("[MemberFlow Auth] Unexpected error during OAuth flow", err);
-        return NextResponse.redirect(new URL("/?error=internal_error", req.url));
+        console.error('[Callback] Unexpected error:', err)
+        return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
     }
 }
