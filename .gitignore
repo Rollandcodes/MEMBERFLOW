@@ -32,3 +32,4 @@ yarn-error.log*
 *.sw?
 
 .vercel
+.env*.local
