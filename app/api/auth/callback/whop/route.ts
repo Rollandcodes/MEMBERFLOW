@@ -126,6 +126,13 @@ export async function GET(request: NextRequest) {
             maxAge: 0,
             path: '/',
         })
+        cookieStore.set('oauth_nonce', '', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 0,
+            path: '/',
+        })
 
         console.log('[Callback] Success! Redirecting to dashboard')
         return NextResponse.redirect(new URL('/app/dashboard', request.url))

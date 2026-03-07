@@ -23,6 +23,7 @@ export async function GET() {
         crypto.createHash('sha256').update(codeVerifier).digest()
     )
     const oauthState = base64URLEncode(crypto.randomBytes(24))
+    const oauthNonce = base64URLEncode(crypto.randomBytes(24))
 
     const cookieStore = await cookies()
     cookieStore.set('pkce_verifier', codeVerifier, {
@@ -39,6 +40,13 @@ export async function GET() {
         maxAge: 600,
         path: '/',
     })
+    cookieStore.set('oauth_nonce', oauthNonce, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 600,
+        path: '/',
+    })
 
     const params = new URLSearchParams({
         client_id: clientId,
@@ -48,6 +56,7 @@ export async function GET() {
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
         state: oauthState,
+        nonce: oauthNonce,
     })
 
     return NextResponse.redirect(`https://api.whop.com/oauth/authorize?${params.toString()}`, { status: 302 })
