@@ -5,7 +5,7 @@ import { ArrowRight, Zap, BarChart3, MessageSquare } from 'lucide-react';
 
 import { cookies } from 'next/headers';
 
-const oauthUrl = `https://api.whop.com/v5/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://memberflow-eight.vercel.app/api/auth/callback')}&response_type=code&scope=openid%20email%20profile`;
+const oauthUrl = '/api/auth/login';
 
 export default async function LandingPage() {
   const cookieStore = cookies();
