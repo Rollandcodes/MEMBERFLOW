@@ -4,6 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import WhopCheckout from '@/components/WhopCheckout';
 
+const growthPlanId = process.env.NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID || 'plan_moC2bR46VnYNr';
+const proPlanId = process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || 'plan_FhYLwoLfNxTCS';
+const hasValidCheckoutConfig =
+    !growthPlanId.startsWith('your_') &&
+    !proPlanId.startsWith('your_');
+
 export default function PricingPage() {
     return (
         <div className="min-h-screen bg-[#060810] text-white flex flex-col font-sans">
@@ -36,6 +42,18 @@ export default function PricingPage() {
                             Start automating your community for free. Upgrade as you grow.
                         </p>
                     </div>
+
+                    {!hasValidCheckoutConfig && (
+                        <div className="max-w-5xl mx-auto mb-8 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
+                            <p className="text-sm font-semibold text-amber-100 text-center">
+                                Checkout is not fully configured. Set valid values for
+                                <code className="mx-1">NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID</code>
+                                and
+                                <code className="mx-1">NEXT_PUBLIC_WHOP_PRO_PLAN_ID</code>
+                                in production env vars.
+                            </p>
+                        </div>
+                    )}
 
                     <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
                         {/* Free Tier */}
@@ -101,7 +119,7 @@ export default function PricingPage() {
                                 </ul>
                             </div>
                             <WhopCheckout
-                                planId={process.env.NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID || 'plan_moC2bR46VnYNr'}
+                                planId={growthPlanId}
                                 buttonText="Upgrade to Growth"
                                 className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25"
                             />
@@ -136,7 +154,7 @@ export default function PricingPage() {
                                 </ul>
                             </div>
                             <WhopCheckout
-                                planId={process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || 'plan_FhYLwoLfNxTCS'}
+                                planId={proPlanId}
                                 buttonText="Upgrade to Pro"
                                 className="w-full bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl"
                             />

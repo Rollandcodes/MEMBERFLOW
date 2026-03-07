@@ -7,6 +7,12 @@ import { Check, Zap } from 'lucide-react';
 import Link from 'next/link';
 import WhopCheckout from './WhopCheckout';
 
+const growthPlanId = process.env.NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID || 'plan_moC2bR46VnYNr';
+const proPlanId = process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || 'plan_FhYLwoLfNxTCS';
+const hasValidCheckoutConfig =
+  !growthPlanId.startsWith('your_') &&
+  !proPlanId.startsWith('your_');
+
 const plans = [
   {
     name: 'Free',
@@ -24,7 +30,7 @@ const plans = [
     cta: 'Upgrade to Growth',
     current: false,
     highlight: true,
-    planId: process.env.NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID || 'plan_moC2bR46VnYNr',
+    planId: growthPlanId,
   },
   {
     name: 'Pro',
@@ -33,7 +39,7 @@ const plans = [
     features: ['Unlimited Communities', 'Unlimited Automated Messages', 'Advanced Custom Webhooks', 'Dedicated Success Manager'],
     cta: 'Upgrade to Pro',
     current: false,
-    planId: process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || 'plan_FhYLwoLfNxTCS',
+    planId: proPlanId,
   },
 ];
 
@@ -44,6 +50,20 @@ export default function BillingPlans() {
         <h1 className="text-3xl font-bold tracking-tight text-gray-900">Billing & Plans</h1>
         <p className="text-muted-foreground">Manage your subscription and community usage limits.</p>
       </div>
+
+      {!hasValidCheckoutConfig && (
+        <Card className="border border-amber-200 bg-amber-50 rounded-2xl">
+          <CardContent className="p-4">
+            <p className="text-sm font-semibold text-amber-800">
+              Checkout is not fully configured. Set valid values for
+              <code className="mx-1">NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID</code>
+              and
+              <code className="mx-1">NEXT_PUBLIC_WHOP_PRO_PLAN_ID</code>
+              in Vercel environment variables.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {plans.map((plan) => (
