@@ -3,9 +3,14 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Zap, BarChart3, MessageSquare } from 'lucide-react';
 
-const oauthUrl = `https://api.whop.com/v5/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=https%3A%2F%2Fmemberflow-eight.vercel.app%2Fapi%2Fauth%2Fcallback&response_type=code&scope=openid`;
+import { cookies } from 'next/headers';
 
-export default function LandingPage() {
+const oauthUrl = `https://api.whop.com/v5/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_WHOP_CLIENT_ID}&redirect_uri=${encodeURIComponent('https://memberflow-eight.vercel.app/api/auth/callback')}&response_type=code&scope=openid%20email%20profile`;
+
+export default async function LandingPage() {
+  const cookieStore = cookies();
+  const isLoggedIn = cookieStore.has("memberflow_company_id");
+
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <header className="px-4 lg:px-6 h-16 flex items-center border-b">
@@ -20,12 +25,12 @@ export default function LandingPage() {
           <Link className="text-sm font-medium hover:text-indigo-600 transition-colors" href="#features">
             Features
           </Link>
-          <a
-            href={oauthUrl}
+          <Link
+            href={isLoggedIn ? "/app/dashboard" : oauthUrl}
             className="text-sm font-medium bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            Connect with Whop
-          </a>
+            {isLoggedIn ? "Go to Dashboard" : "Connect with Whop"}
+          </Link>
         </nav>
       </header>
       <main className="flex-1">
@@ -41,19 +46,21 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a
-                  href={oauthUrl}
+                <Link
+                  href={isLoggedIn ? "/app/dashboard" : oauthUrl}
                   className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-indigo-200 transition-colors"
                 >
-                  Connect with Whop
+                  {isLoggedIn ? "Go to Dashboard" : "Connect with Whop"}
                   <ArrowRight className="ml-2 h-5 w-5" />
-                </a>
-                <Link
-                  href="/app/dashboard"
-                  className="inline-flex items-center justify-center border border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-8 py-4 rounded-2xl text-lg font-semibold transition-colors"
-                >
-                  View Dashboard
                 </Link>
+                {!isLoggedIn && (
+                  <Link
+                    href="/app/dashboard"
+                    className="inline-flex items-center justify-center border border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-8 py-4 rounded-2xl text-lg font-semibold transition-colors"
+                  >
+                    View Dashboard
+                  </Link>
+                )}
               </div>
             </div>
           </div>

@@ -1,11 +1,4 @@
-import React from "react";
-import BillingPlans from "../../components/BillingPlans";
-import DashboardLayout from "../app/dashboard/layout";
-
-export default function BillingPage() {
-  return (
-    <DashboardLayout>
-      <BillingPlans />
-    </DashboardLayout>
-  );
+import { redirect } from "next/navigation";
+export default function BillingRedirect() {
+  redirect("/app/billing");
 }

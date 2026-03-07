@@ -17,19 +17,21 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Step 1: Exchange code for token
+        // Step 1: Exchange code for token (OAuth2 standard requires form-urlencoded)
+        const body = new URLSearchParams({
+            code: code,
+            client_id: process.env.WHOP_CLIENT_ID || '',
+            client_secret: process.env.WHOP_CLIENT_SECRET || '',
+            redirect_uri: process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback',
+            grant_type: 'authorization_code',
+        });
+
         const tokenRes = await fetch('https://api.whop.com/v5/oauth/token', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: JSON.stringify({
-                code,
-                client_id: process.env.WHOP_CLIENT_ID,
-                client_secret: process.env.WHOP_CLIENT_SECRET,
-                redirect_uri: 'https://memberflow-eight.vercel.app/api/auth/callback',
-                grant_type: 'authorization_code',
-            }),
+            body: body,
         })
 
         const tokenText = await tokenRes.text()

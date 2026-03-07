@@ -6,6 +6,8 @@ import { Users, Send, MessageSquare, BarChart3, Sparkles, Globe, ShieldCheck } f
 import DashboardHero from "@/components/DashboardHero";
 import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
+import OnboardingWizard from "@/components/OnboardingWizard";
+import { AlertTriangle } from "lucide-react";
 
 // Converting to a Server Component to hit Prisma directly without API routes!
 export default async function DashboardPage() {
@@ -59,8 +61,41 @@ export default async function DashboardPage() {
 
   const communityName = company.name || "Your Community";
 
+  // Plan Enforcement Logic
+  const isFree = company.plan === "free";
+  const isGrowth = company.plan === "growth";
+
+  const automationsLimit = isFree ? 1 : isGrowth ? 10 : Infinity;
+  const membersLimit = isFree ? 50 : isGrowth ? 500 : Infinity;
+
+  const hitAutomationLimit = activeCampaignsCount >= automationsLimit;
+  const hitMembersLimit = membersCount >= membersLimit;
+  const hitAnyLimit = isFree && (hitAutomationLimit || hitMembersLimit);
+
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8 pb-12 relative">
+      {activeCampaignsCount === 0 && <OnboardingWizard companyName={communityName} />}
+
+      {hitAnyLimit && (
+        <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-4 rounded-r-lg flex items-center justify-between mb-8 shadow-sm">
+          <div className="flex items-center">
+            <AlertTriangle className="h-6 w-6 mr-3 text-amber-600" />
+            <div>
+              <h3 className="font-bold text-amber-900">You've reached your Free plan limit.</h3>
+              <p className="text-sm font-medium opacity-90">Upgrade to Growth to continue adding automations and members.</p>
+            </div>
+          </div>
+          <a
+            href="https://whop.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-sm"
+          >
+            Upgrade Now
+          </a>
+        </div>
+      )}
+
       <DashboardHero communityName={communityName} />
 
       {/* Stats Grid */}
