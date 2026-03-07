@@ -25,12 +25,21 @@ export default async function LandingPage() {
           <Link className="text-sm font-medium hover:text-indigo-600 transition-colors" href="#features">
             Features
           </Link>
-          <Link
-            href={isLoggedIn ? "/app/dashboard" : oauthUrl}
-            className="text-sm font-medium bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            {isLoggedIn ? "Go to Dashboard" : "Connect with Whop"}
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              href="/app/dashboard"
+              className="text-sm font-medium bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            <a
+              href={oauthUrl}
+              className="text-sm font-medium bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              Connect with Whop
+            </a>
+          )}
         </nav>
       </header>
       <main className="flex-1">
@@ -46,13 +55,23 @@ export default async function LandingPage() {
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href={isLoggedIn ? "/app/dashboard" : oauthUrl}
-                  className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-indigo-200 transition-colors"
-                >
-                  {isLoggedIn ? "Go to Dashboard" : "Connect with Whop"}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
+                {isLoggedIn ? (
+                  <Link
+                    href="/app/dashboard"
+                    className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-indigo-200 transition-colors"
+                  >
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                ) : (
+                  <a
+                    href={oauthUrl}
+                    className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl text-lg font-bold shadow-xl shadow-indigo-200 transition-colors"
+                  >
+                    Connect with Whop
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </a>
+                )}
 
               </div>
             </div>
