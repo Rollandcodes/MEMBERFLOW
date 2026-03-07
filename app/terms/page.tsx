@@ -7,7 +7,7 @@ export const metadata = {
     "MemberFlow Terms of Service — the rules governing your use of our Whop community onboarding automation platform.",
 };
 
-const LAST_UPDATED = "March 1, 2025";
+const LAST_UPDATED = "March 7, 2026";
 
 export default function TermsPage() {
   return (
@@ -313,7 +313,7 @@ export default function TermsPage() {
           </a>
         </div>
         <div className="text-xs text-white/20">
-          © 2025 MemberFlow. All rights reserved.
+          © 2026 MemberFlow. All rights reserved.
         </div>
       </footer>
 

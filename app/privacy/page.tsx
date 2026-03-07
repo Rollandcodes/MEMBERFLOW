@@ -7,7 +7,7 @@ export const metadata = {
     "Learn how MemberFlow collects, uses, and protects your data when you use our Whop community onboarding automation platform.",
 };
 
-const LAST_UPDATED = "March 1, 2025";
+const LAST_UPDATED = "March 7, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -298,7 +298,7 @@ export default function PrivacyPage() {
           </a>
         </div>
         <div className="text-xs text-white/20">
-          © 2025 MemberFlow. All rights reserved.
+          © 2026 MemberFlow. All rights reserved.
         </div>
       </footer>
 

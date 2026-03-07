@@ -131,6 +131,39 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        <section id="ai-features" className="w-full py-12 md:py-20 bg-white">
+          <div className="container px-4 md:px-6">
+            <div className="rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-8 md:p-10 shadow-sm">
+              <div className="max-w-3xl">
+                <h2 className="text-3xl md:text-4xl font-black text-slate-900">AI Features That Save Hours Every Week</h2>
+                <p className="text-slate-600 mt-3 text-lg">
+                  Use the AI DM writer to generate welcome messages, stream multi-step onboarding sequences, and get churn insights before members go inactive.
+                </p>
+              </div>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-indigo-100 bg-white p-5">
+                  <h3 className="text-base font-black text-slate-900">AI DM Writer</h3>
+                  <p className="text-sm text-slate-600 mt-2">Generate high-converting onboarding messages in seconds based on your niche and tone.</p>
+                </div>
+                <div className="rounded-2xl border border-indigo-100 bg-white p-5">
+                  <h3 className="text-base font-black text-slate-900">Sequence Generator</h3>
+                  <p className="text-sm text-slate-600 mt-2">Create full 3-step drip campaigns with timing and copy tailored to your community goals.</p>
+                </div>
+                <div className="rounded-2xl border border-indigo-100 bg-white p-5">
+                  <h3 className="text-base font-black text-slate-900">Churn Insights</h3>
+                  <p className="text-sm text-slate-600 mt-2">Get actionable retention recommendations from real engagement signals.</p>
+                </div>
+              </div>
+              <div className="mt-8">
+                <Link href="/app/campaigns" className="inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 transition-colors">
+                  Try AI Campaign Tools
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section id="pricing" className="w-full py-12 md:py-20 bg-slate-50">
           <div className="container px-4 md:px-6">
             <div className="max-w-3xl mb-10">
