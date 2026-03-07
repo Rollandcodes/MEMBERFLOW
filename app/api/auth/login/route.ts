@@ -17,7 +17,7 @@ export async function GET() {
     });
 
     return NextResponse.redirect(
-        `https://whop.com/oauth?${params.toString()}`,
+        `https://api.whop.com/oauth/authorize?${params.toString()}`,
         { status: 302 }
     );
 }
