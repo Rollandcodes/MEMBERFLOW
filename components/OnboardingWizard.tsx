@@ -12,15 +12,31 @@ export default function OnboardingWizard({ companyName }: { companyName: string 
   const [productName, setProductName] = useState("");
   const [message, setMessage] = useState("Hey {{first_name}} 👋 Welcome to the community! So glad to have you here.");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleFinish = async () => {
     setIsSubmitting(true);
-    // In a real app we submit to an API route to create the campaign here.
-    setTimeout(() => {
-      // Persist completion so the welcome wizard does not reopen on refresh.
+    setSubmitError("");
+
+    try {
+      const res = await fetch('/api/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!res.ok) {
+        setSubmitError('Could not activate automation. Please try again.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Persist completion so the wizard stays closed after activation.
       document.cookie = 'memberflow_onboarding_completed=1; path=/; max-age=31536000; samesite=lax';
-      window.location.reload();
-    }, 1500);
+      window.location.assign('/app/dashboard');
+    } catch {
+      setSubmitError('Network error while activating automation. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -126,13 +142,18 @@ export default function OnboardingWizard({ companyName }: { companyName: string 
               </p>
             </CardContent>
             <CardFooter className="p-6 pt-0">
-              <Button
-                onClick={handleFinish}
-                className="w-full bg-green-600 hover:bg-green-700 text-lg py-6 rounded-xl shadow-lg shadow-green-200 font-black"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Activating..." : "Activate Automation Now"}
-              </Button>
+              <div className="w-full space-y-3">
+                {submitError && (
+                  <p className="text-sm font-semibold text-red-600 text-center">{submitError}</p>
+                )}
+                <Button
+                  onClick={handleFinish}
+                  className="w-full bg-green-600 hover:bg-green-700 text-lg py-6 rounded-xl shadow-lg shadow-green-200 font-black"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Activating..." : "Activate Automation Now"}
+                </Button>
+              </div>
             </CardFooter>
           </>
         )}

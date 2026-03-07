@@ -23,14 +23,44 @@ export async function POST(req: NextRequest) {
     const companyId = cookies().get("memberflow_company_id")?.value;
     if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    let body;
+    let body: any = {};
     try {
-        body = await req.json();
+        const rawBody = await req.text();
+        body = rawBody ? JSON.parse(rawBody) : {};
     } catch {
         return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
     const { id, isActive, messageText, name, triggerType, delayHours } = body;
+
+    // Onboarding default create path: POST /api/campaigns with no payload.
+    if (!id && !name && !messageText) {
+        const existingDefault = await prisma.campaign.findFirst({
+            where: {
+                companyId,
+                name: "Welcome Sequence",
+                triggerType: "membership.activated",
+            },
+            orderBy: { createdAt: "asc" },
+        });
+
+        if (existingDefault) {
+            return NextResponse.json({ campaign: existingDefault, created: false });
+        }
+
+        const defaultCampaign = await prisma.campaign.create({
+            data: {
+                companyId,
+                name: "Welcome Sequence",
+                messageText: "Hey {{first_name}}! Welcome to the community. Glad to have you here.",
+                triggerType: "membership.activated",
+                delayHours: 0,
+                isActive: true,
+            },
+        });
+
+        return NextResponse.json({ campaign: defaultCampaign, created: true }, { status: 201 });
+    }
 
     // CREATE logic
     if (!id) {
