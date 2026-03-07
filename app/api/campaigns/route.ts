@@ -10,12 +10,17 @@ export async function GET(req: NextRequest) {
     const companyId = cookies().get("memberflow_company_id")?.value;
     if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { plan: true },
+    });
+
     const campaigns = await prisma.campaign.findMany({
         where: { companyId },
         orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json({ campaigns });
+    return NextResponse.json({ campaigns, companyPlan: company?.plan === "free" ? "free" : "pro" });
 }
 
 // POST to update or create a campaign

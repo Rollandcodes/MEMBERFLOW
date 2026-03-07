@@ -7,9 +7,10 @@ import Link from 'next/link';
 
 interface DashboardHeroProps {
   communityName: string;
+  subscriptionPlan?: 'free' | 'pro';
 }
 
-export default function DashboardHero({ communityName }: DashboardHeroProps) {
+export default function DashboardHero({ communityName, subscriptionPlan = 'free' }: DashboardHeroProps) {
   return (
     <div className="relative overflow-hidden rounded-3xl bg-indigo-600 p-8 text-white shadow-2xl transition-all hover:shadow-indigo-500/20">
       {/* Background Orbs */}
@@ -21,6 +22,9 @@ export default function DashboardHero({ communityName }: DashboardHeroProps) {
           <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
             <Sparkles className="h-3 w-3" />
             <span>Automation Engine Active</span>
+          </div>
+          <div className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
+            Plan: {subscriptionPlan}
           </div>
           
           <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">

@@ -16,6 +16,7 @@ type Campaign = {
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [companyPlan, setCompanyPlan] = useState<"free" | "pro">("free");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
@@ -89,6 +90,11 @@ export default function CampaignsPage() {
       .then((data) => {
         if (data.campaigns) {
           setCampaigns(data.campaigns);
+        }
+        if (data.companyPlan === "pro") {
+          setCompanyPlan("pro");
+        } else {
+          setCompanyPlan("free");
         }
         setLoading(false);
       })
@@ -378,12 +384,17 @@ export default function CampaignsPage() {
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-white rounded-t-xl">
                     <div className="font-bold text-slate-900">{campaign.name} Message</div>
                     <div className="flex items-center gap-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="font-bold rounded-lg"
-                        onClick={() => openAiModal(campaign.id)}
-                      >Write with AI ✨</Button>
+                      <span title={companyPlan === "free" ? "Upgrade to Pro" : undefined} className="inline-flex">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="font-bold rounded-lg disabled:opacity-60 disabled:cursor-not-allowed"
+                          disabled={companyPlan === "free"}
+                          onClick={() => openAiModal(campaign.id)}
+                        >
+                          {companyPlan === "free" ? "Upgrade to Pro" : "Write with AI ✨"}
+                        </Button>
+                      </span>
                       <div className="text-xs text-slate-400 font-mono">Available variables: {"{{first_name}}"}, {"{{product_name}}"}</div>
                     </div>
                   </div>

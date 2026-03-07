@@ -11,6 +11,7 @@ import prisma from "@/lib/prisma";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { AlertTriangle } from "lucide-react";
 import WhopCheckout from "@/components/WhopCheckout";
+import { getSubscriptionStatus } from "@/lib/subscription";
 
 // Converting to a Server Component to hit Prisma directly without API routes!
 export default async function DashboardPage() {
@@ -33,6 +34,20 @@ export default async function DashboardPage() {
   }
 
   const currentCompany = company;
+  const currentPlan = currentCompany.plan === "free" ? "free" : "pro";
+  const subscriptionStatus = await getSubscriptionStatus(currentCompany.accessToken, currentPlan);
+
+  if (subscriptionStatus.plan !== currentPlan) {
+    const nextStoredPlan =
+      currentCompany.plan === "growth" && subscriptionStatus.plan === "pro"
+        ? "growth"
+        : subscriptionStatus.plan;
+
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { plan: nextStoredPlan },
+    });
+  }
 
   // 2. Fetch Aggregated Stats
   const [membersCount, activeCampaignsCount, sentMessagesCount, messageLogs] = await Promise.all([
@@ -67,9 +82,15 @@ export default async function DashboardPage() {
 
   const communityName = currentCompany.name || "Your Community";
 
+  const placeholderStats = [
+    { label: "Total Members", value: "-" },
+    { label: "Messages Sent", value: "-" },
+    { label: "Activation Rate", value: "-" },
+  ];
+
   // Plan Enforcement Logic
-  const isFree = currentCompany.plan === "free";
-  const isGrowth = currentCompany.plan === "growth";
+  const isFree = subscriptionStatus.plan === "free";
+  const isGrowth = false;
 
   const automationsLimit = isFree ? 1 : isGrowth ? 10 : Infinity;
   const membersLimit = isFree ? 50 : isGrowth ? 500 : Infinity;
@@ -77,6 +98,10 @@ export default async function DashboardPage() {
   const hitAutomationLimit = activeCampaignsCount >= automationsLimit;
   const hitMembersLimit = membersCount >= membersLimit;
   const hitAnyLimit = isFree && (hitAutomationLimit || hitMembersLimit);
+
+  const subscriptionExpiresText = subscriptionStatus.expiresAt
+    ? subscriptionStatus.expiresAt.toLocaleDateString()
+    : "soon";
 
   return (
     <div className="space-y-8 pb-12 relative">
@@ -99,9 +124,54 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <DashboardHero communityName={communityName} />
+      {subscriptionStatus.isPastDue && (
+        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-900 p-4 rounded-r-lg flex items-center justify-between shadow-sm">
+          <p className="font-semibold">Your payment failed — update your billing to keep access</p>
+          <Button asChild variant="outline" className="font-bold rounded-xl border-yellow-400 text-yellow-900 hover:bg-yellow-200">
+            <Link href="/app/billing">Update Billing</Link>
+          </Button>
+        </div>
+      )}
 
-      {membersCount === 0 && activeCampaignsCount === 0 && (
+      {!subscriptionStatus.isPastDue && subscriptionStatus.isCancelling && (
+        <div className="bg-orange-100 border-l-4 border-orange-500 text-orange-900 p-4 rounded-r-lg flex items-center justify-between shadow-sm">
+          <p className="font-semibold">Your plan cancels on {subscriptionExpiresText} — renew to keep your campaigns running</p>
+          <Button asChild variant="outline" className="font-bold rounded-xl border-orange-400 text-orange-900 hover:bg-orange-200">
+            <Link href="/app/billing">Renew Plan</Link>
+          </Button>
+        </div>
+      )}
+
+      {!subscriptionStatus.isPastDue && !subscriptionStatus.isCancelling && !subscriptionStatus.isActive && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-900 p-4 rounded-r-lg flex items-center justify-between shadow-sm">
+          <p className="font-semibold">Your subscription has ended — upgrade to reactivate</p>
+          <Button asChild variant="outline" className="font-bold rounded-xl border-red-400 text-red-900 hover:bg-red-200">
+            <Link href="/app/billing">Upgrade</Link>
+          </Button>
+        </div>
+      )}
+
+      <DashboardHero communityName={communityName} subscriptionPlan={subscriptionStatus.plan} />
+
+      {/* Reviewer-friendly placeholder metrics row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {placeholderStats.map((stat) => (
+          <Card
+            key={stat.label}
+            className="border border-slate-200 bg-slate-50/80 shadow-none rounded-2xl"
+          >
+            <CardContent className="p-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{stat.label}</p>
+              <div className="mt-3 flex items-center gap-2">
+                <span className="text-2xl font-black text-slate-400">{stat.value}</span>
+                <span className="inline-block h-2 w-2 rounded-full bg-slate-300 animate-pulse" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {membersCount === 0 && activeCampaignsCount === 0 && !onboardingCompleted && (
         <Card className="border border-indigo-100 bg-indigo-50/40 rounded-3xl shadow-sm">
           <CardContent className="p-6 md:p-8">
             <h3 className="text-xl font-black text-slate-900">Your workspace is ready. Start with these next steps:</h3>
@@ -117,6 +187,20 @@ export default async function DashboardPage() {
                 <Link href="/app/analytics">View Analytics Setup</Link>
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeCampaignsCount === 0 && onboardingCompleted && (
+        <Card className="border border-indigo-100 bg-indigo-50/40 rounded-3xl shadow-sm">
+          <CardContent className="p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-black text-slate-900">No campaigns yet — create your first one</h3>
+              <p className="text-sm text-slate-600 mt-2">You are connected and ready. Create a campaign to start onboarding new members automatically.</p>
+            </div>
+            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold w-full md:w-auto">
+              <Link href="/app/campaigns/new">Create Campaign</Link>
+            </Button>
           </CardContent>
         </Card>
       )}
