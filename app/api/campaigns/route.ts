@@ -7,7 +7,8 @@ import prisma from "@/lib/prisma";
 
 // GET all campaigns for the current company
 export async function GET(req: NextRequest) {
-    const companyId = cookies().get("memberflow_company_id")?.value;
+    const cookieStore = await cookies();
+    const companyId = cookieStore.get("memberflow_company_id")?.value;
     if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const company = await prisma.company.findUnique({
@@ -25,7 +26,8 @@ export async function GET(req: NextRequest) {
 
 // POST to update or create a campaign
 export async function POST(req: NextRequest) {
-    const companyId = cookies().get("memberflow_company_id")?.value;
+    const cookieStore = await cookies();
+    const companyId = cookieStore.get("memberflow_company_id")?.value;
     if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     let body: any = {};

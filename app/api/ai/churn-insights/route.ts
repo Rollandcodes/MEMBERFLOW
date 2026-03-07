@@ -16,7 +16,8 @@ function normalizeInsights(raw: string): string[] {
 }
 
 export async function POST(request: NextRequest) {
-  const companyId = cookies().get('memberflow_company_id')?.value
+  const cookieStore = await cookies()
+  const companyId = cookieStore.get('memberflow_company_id')?.value
   if (!companyId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
