@@ -12,8 +12,10 @@ export async function GET(request: NextRequest) {
     console.log('[Callback] code:', code, 'error:', error)
 
     if (error || !code) {
-        console.log('[Callback] No code or error param:', error)
-        return NextResponse.redirect(new URL('/?error=missing_code', request.url))
+        console.log('[Callback] No code or error param:', error || 'unknown');
+        // Pass through all query params for debugging (e.g. error, error_description)
+        const params = new URLSearchParams(searchParams);
+        return NextResponse.redirect(new URL(`/?${params.toString()}`, request.url))
     }
 
     try {
