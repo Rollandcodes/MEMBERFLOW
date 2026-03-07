@@ -50,5 +50,5 @@ export async function GET() {
         state: oauthState,
     })
 
-    return NextResponse.redirect(`https://whop.com/oauth?${params.toString()}`, { status: 302 })
+    return NextResponse.redirect(`https://api.whop.com/oauth/authorize?${params.toString()}`, { status: 302 })
 }
