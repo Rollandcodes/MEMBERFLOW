@@ -3,6 +3,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
 import { Users, Send, MessageSquare, BarChart3, Sparkles, Globe, ShieldCheck } from "lucide-react";
 import DashboardHero from "@/components/DashboardHero";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,26 @@ export default async function DashboardPage() {
       )}
 
       <DashboardHero communityName={communityName} />
+
+      {membersCount === 0 && activeCampaignsCount === 0 && (
+        <Card className="border border-indigo-100 bg-indigo-50/40 rounded-3xl shadow-sm">
+          <CardContent className="p-6 md:p-8">
+            <h3 className="text-xl font-black text-slate-900">Your workspace is ready. Start with these next steps:</h3>
+            <p className="text-sm text-slate-600 mt-2">Create your first campaign, add a template from Discover, then invite members so automation can run.</p>
+            <div className="flex flex-wrap gap-3 mt-5">
+              <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold">
+                <Link href="/app/discover">Use a Discover Template</Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl font-bold">
+                <Link href="/app/campaigns">Create Manual Campaign</Link>
+              </Button>
+              <Button asChild variant="ghost" className="rounded-xl font-bold text-indigo-700 hover:text-indigo-800">
+                <Link href="/app/analytics">View Analytics Setup</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
