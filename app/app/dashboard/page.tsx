@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import prisma from "@/lib/prisma";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { AlertTriangle } from "lucide-react";
+import WhopCheckout from "@/components/WhopCheckout";
 
 // Converting to a Server Component to hit Prisma directly without API routes!
 export default async function DashboardPage() {
@@ -24,9 +25,11 @@ export default async function DashboardPage() {
   });
 
   if (!company) {
-    // Session is invalid/stale
     redirect("/");
+    return null;
   }
+
+  const currentCompany = company;
 
   // 2. Fetch Aggregated Stats
   const [membersCount, activeCampaignsCount, sentMessagesCount, messageLogs] = await Promise.all([
@@ -59,11 +62,11 @@ export default async function DashboardPage() {
     { name: "Engagement Rate", value: engagementRate, icon: BarChart3, color: "text-amber-600", bg: "bg-amber-50/50" },
   ];
 
-  const communityName = company.name || "Your Community";
+  const communityName = currentCompany.name || "Your Community";
 
   // Plan Enforcement Logic
-  const isFree = company.plan === "free";
-  const isGrowth = company.plan === "growth";
+  const isFree = currentCompany.plan === "free";
+  const isGrowth = currentCompany.plan === "growth";
 
   const automationsLimit = isFree ? 1 : isGrowth ? 10 : Infinity;
   const membersLimit = isFree ? 50 : isGrowth ? 500 : Infinity;
@@ -85,14 +88,11 @@ export default async function DashboardPage() {
               <p className="text-sm font-medium opacity-90">Upgrade to Growth to continue adding automations and members.</p>
             </div>
           </div>
-          <a
-            href="https://whop.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-sm"
-          >
-            Upgrade Now
-          </a>
+          <WhopCheckout
+            planId={process.env.NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID || "plan_moC2bR46VnYNr"}
+            buttonText="Upgrade to Growth"
+            className="flex-shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-sm"
+          />
         </div>
       )}
 
@@ -197,17 +197,17 @@ export default async function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-white/5 rounded-2xl border border-white/5">
                   <div className="h-12 w-12 rounded-xl shadow-lg bg-indigo-600 flex items-center justify-center font-bold">
-                    {company.name ? company.name.substring(0, 1).toUpperCase() : "C"}
+                    {currentCompany.name ? currentCompany.name.substring(0, 1).toUpperCase() : "C"}
                   </div>
                   <div>
-                    <div className="font-bold text-indigo-100">{company.name}</div>
-                    <div className="text-[10px] text-indigo-400 font-mono">{company.whopUserId}</div>
+                    <div className="font-bold text-indigo-100">{currentCompany.name}</div>
+                    <div className="text-[10px] text-indigo-400 font-mono">{currentCompany.whopUserId}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-white/5 rounded-xl border border-white/5">
                     <div className="text-[10px] text-indigo-400 uppercase font-bold">Plan</div>
-                    <div className="text-sm font-bold capitalize">{company.plan}</div>
+                    <div className="text-sm font-bold capitalize">{currentCompany.plan}</div>
                   </div>
                   <div className="p-3 bg-white/5 rounded-xl border border-white/5">
                     <div className="text-[10px] text-indigo-400 uppercase font-bold">API Status</div>
@@ -227,9 +227,11 @@ export default async function DashboardPage() {
             </div>
             <h3 className="font-black text-slate-900 mb-2">Automate more.</h3>
             <p className="text-sm text-slate-500 mb-4 leading-relaxed">Unlock advanced AI sequences and custom webhook triggers with Pro.</p>
-            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold rounded-2xl py-6 shadow-indigo-200 shadow-xl">
-              Upgrade Now
-            </Button>
+            <WhopCheckout
+              planId={process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || "plan_FhYLwoLfNxTCS"}
+              buttonText="Upgrade to Pro"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold rounded-2xl py-6 shadow-indigo-200 shadow-xl"
+            />
           </Card>
         </div>
       </div>

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ campaigns });
 }
 
-// POST to update a campaign
+// POST to update or create a campaign
 export async function POST(req: NextRequest) {
     const companyId = cookies().get("memberflow_company_id")?.value;
     if (!companyId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -29,9 +29,29 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
-    const { id, isActive, messageText } = body;
-    if (!id) return NextResponse.json({ error: "Missing campaign ID" }, { status: 400 });
+    const { id, isActive, messageText, name, triggerType, delayHours } = body;
 
+    // CREATE logic
+    if (!id) {
+        if (!name || !messageText) {
+            return NextResponse.json({ error: "Missing name or messageText for new campaign" }, { status: 400 });
+        }
+
+        const newCampaign = await prisma.campaign.create({
+            data: {
+                companyId,
+                name,
+                messageText,
+                triggerType: triggerType || 'membership.activated',
+                delayHours: delayHours !== undefined ? delayHours : 0,
+                isActive: isActive !== undefined ? isActive : true,
+            }
+        });
+
+        return NextResponse.json({ campaign: newCampaign });
+    }
+
+    // UPDATE logic
     // Ensure this campaign belongs to this company
     const existing = await prisma.campaign.findFirst({
         where: { id, companyId },
@@ -44,8 +64,11 @@ export async function POST(req: NextRequest) {
     const updated = await prisma.campaign.update({
         where: { id },
         data: {
+            name: name || existing.name,
             isActive: isActive !== undefined ? isActive : existing.isActive,
             messageText: messageText || existing.messageText,
+            triggerType: triggerType || existing.triggerType,
+            delayHours: delayHours !== undefined ? delayHours : existing.delayHours,
         },
     });
 

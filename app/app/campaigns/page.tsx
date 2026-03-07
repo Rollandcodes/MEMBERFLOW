@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Send, Clock, Play, Pause, Loader2, Save, Zap } from "lucide-react";
+import { Send, Clock, Play, Pause, Loader2, Save, Zap, Plus, Trash2 } from "lucide-react";
 
 type Campaign = {
   id: string;
@@ -21,6 +21,46 @@ export default function CampaignsPage() {
 
   // Local edits before saving
   const [edits, setEdits] = useState<Record<string, string>>({});
+
+  const handleCreateCampaign = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "New Welcome Sequence",
+          messageText: "Welcome to our community! We're glad to have you here.",
+          triggerType: "membership.activated",
+          delayHours: 0,
+          isActive: false
+        }),
+      });
+      const data = await res.json();
+      if (data.campaign) {
+        setCampaigns([data.campaign, ...campaigns]);
+      }
+    } catch (err) {
+      console.error("Failed to create campaign", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this automation?")) return;
+
+    try {
+      await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isActive: false, name: `[DELETED] ${id}` }),
+      });
+      setCampaigns((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      console.error("Failed to delete", err);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/campaigns")
@@ -97,9 +137,17 @@ export default function CampaignsPage() {
 
   return (
     <div className="space-y-8 pb-12">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight">Automations</h1>
-        <p className="text-slate-500 mt-2">Manage your welcome messages and drip sequences.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Automations</h1>
+          <p className="text-slate-500 mt-2">Manage your welcome messages and drip sequences.</p>
+        </div>
+        <Button
+          onClick={handleCreateCampaign}
+          className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-2xl px-6 py-6 shadow-xl shadow-indigo-100"
+        >
+          <Plus className="h-5 w-5 mr-2" /> Create New Automation
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
@@ -137,10 +185,10 @@ export default function CampaignsPage() {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100">
+                  <div className="pt-4 border-t border-slate-100 flex gap-2">
                     <Button
                       variant={campaign.isActive ? "default" : "outline"}
-                      className={`w-full font-bold rounded-xl ${campaign.isActive ? 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-200' : ''}`}
+                      className={`flex-1 font-bold rounded-xl ${campaign.isActive ? 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-200' : ''}`}
                       onClick={() => handleToggle(campaign.id, campaign.isActive)}
                     >
                       {campaign.isActive ? (
@@ -148,6 +196,14 @@ export default function CampaignsPage() {
                       ) : (
                         <><Pause className="h-4 w-4 mr-2" /> Paused</>
                       )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50"
+                      onClick={() => handleDeleteCampaign(campaign.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
