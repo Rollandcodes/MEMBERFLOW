@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
             code: code,
             client_id: process.env.WHOP_CLIENT_ID || '',
             client_secret: process.env.WHOP_CLIENT_SECRET || '',
-            redirect_uri: process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback',
+            redirect_uri: process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback/whop',
             grant_type: 'authorization_code',
         });
 
@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
         console.log('[Callback] Token response body:', tokenText)
 
         if (!tokenRes.ok) {
-            console.error('[Callback] Token exchange failed:', tokenText)
-            return NextResponse.redirect(new URL(`/?error=token_exchange_failed`, request.url))
+            const errorDetail = encodeURIComponent(tokenText.substring(0, 200))
+            return NextResponse.redirect(new URL(`/?error=token_exchange_failed&detail=${errorDetail}`, request.url))
         }
 
         const tokenData = JSON.parse(tokenText)
