@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
   BarChart, 
@@ -32,6 +32,49 @@ const performanceData = [
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
 
 export default function AnalyticsCharts() {
+  const [lastActiveDate, setLastActiveDate] = useState('2026-03-01');
+  const [messageOpenRate, setMessageOpenRate] = useState('48.2');
+  const [insights, setInsights] = useState<string[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState('');
+
+  const generateChurnInsights = async () => {
+    const openRateValue = Number(messageOpenRate);
+    if (!lastActiveDate || Number.isNaN(openRateValue)) {
+      setInsightsError('Enter a valid last active date and open rate.');
+      return;
+    }
+
+    setInsightsLoading(true);
+    setInsightsError('');
+
+    try {
+      const res = await fetch('/api/ai/churn-insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lastActiveDate,
+          messageOpenRate: openRateValue,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !Array.isArray(data?.insights)) {
+        setInsights([]);
+        setInsightsError(data?.error || 'Failed to generate churn insights.');
+        return;
+      }
+
+      setInsights(data.insights);
+    } catch {
+      setInsights([]);
+      setInsightsError('Network error while generating churn insights.');
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -100,6 +143,62 @@ export default function AnalyticsCharts() {
                 <Bar dataKey="sent" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Messages Sent" />
               </AreaChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-slate-100">
+          <CardHeader>
+            <CardTitle className="flex items-center text-lg">
+              <Target className="mr-2 h-5 w-5 text-rose-500" />
+              AI Churn Risk Insights
+            </CardTitle>
+            <CardDescription>Generate 3 actionable churn-risk bullets from recent engagement stats.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Last Active Date</label>
+                <input
+                  type="date"
+                  value={lastActiveDate}
+                  onChange={(e) => setLastActiveDate(e.target.value)}
+                  className="h-10 w-full px-3 rounded-md border border-input bg-background text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Message Open Rate (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={messageOpenRate}
+                  onChange={(e) => setMessageOpenRate(e.target.value)}
+                  className="h-10 w-full px-3 rounded-md border border-input bg-background text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={generateChurnInsights}
+              disabled={insightsLoading}
+              className="inline-flex items-center justify-center rounded-md bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {insightsLoading ? 'Generating...' : 'Generate AI Insights'}
+            </button>
+
+            {insightsError ? <p className="text-sm font-semibold text-red-600">{insightsError}</p> : null}
+
+            {insights.length > 0 ? (
+              <ul className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                {insights.map((item, index) => (
+                  <li key={`insight-${index}`} className="text-sm text-slate-700 leading-relaxed">
+                    - {item}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </CardContent>
         </Card>
       </div>
