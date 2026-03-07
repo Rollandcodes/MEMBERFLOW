@@ -18,6 +18,12 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
+  const [aiErrorById, setAiErrorById] = useState<Record<string, string>>({});
+  const [aiSuggestionsById, setAiSuggestionsById] = useState<Record<string, string[]>>({});
+  const [communityName, setCommunityName] = useState("My Community");
+  const [niche, setNiche] = useState("");
+  const [tone, setTone] = useState("friendly");
 
   // Local edits before saving
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -127,6 +133,52 @@ export default function CampaignsPage() {
     }
   };
 
+  const handleWriteWithAI = async (campaignId: string) => {
+    if (!niche.trim()) {
+      setAiErrorById((prev) => ({ ...prev, [campaignId]: "Please enter your niche first." }));
+      return;
+    }
+
+    setAiLoadingId(campaignId);
+    setAiErrorById((prev) => ({ ...prev, [campaignId]: "" }));
+
+    try {
+      const res = await fetch('/api/ai/generate-dm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          communityName,
+          niche,
+          tone,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !Array.isArray(data?.suggestions)) {
+        setAiErrorById((prev) => ({
+          ...prev,
+          [campaignId]: data?.error || 'Failed to generate suggestions.',
+        }));
+        setAiSuggestionsById((prev) => ({ ...prev, [campaignId]: [] }));
+        return;
+      }
+
+      setAiSuggestionsById((prev) => ({ ...prev, [campaignId]: data.suggestions }));
+    } catch {
+      setAiErrorById((prev) => ({
+        ...prev,
+        [campaignId]: 'Network error while generating suggestions.',
+      }));
+    } finally {
+      setAiLoadingId(null);
+    }
+  };
+
+  const applySuggestion = (campaignId: string, suggestion: string) => {
+    setEdits((prev) => ({ ...prev, [campaignId]: suggestion }));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -149,6 +201,38 @@ export default function CampaignsPage() {
           <Plus className="h-5 w-5 mr-2" /> Create New Automation
         </Button>
       </div>
+
+      <Card className="border border-slate-200 rounded-3xl shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-black text-slate-900">AI DM Writer</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input
+              className="h-11 rounded-xl border border-slate-200 px-3 text-sm"
+              placeholder="Community name"
+              value={communityName}
+              onChange={(e) => setCommunityName(e.target.value)}
+            />
+            <input
+              className="h-11 rounded-xl border border-slate-200 px-3 text-sm"
+              placeholder="Niche (e.g. crypto trading, fitness coaching)"
+              value={niche}
+              onChange={(e) => setNiche(e.target.value)}
+            />
+            <select
+              className="h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white"
+              value={tone}
+              onChange={(e) => setTone(e.target.value)}
+            >
+              <option value="friendly">Friendly</option>
+              <option value="professional">Professional</option>
+              <option value="bold">Bold</option>
+              <option value="playful">Playful</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6">
         {campaigns.length === 0 ? (
@@ -212,7 +296,22 @@ export default function CampaignsPage() {
                 <div className="md:w-2/3 border border-slate-100 rounded-2xl bg-slate-50/50 p-1 flex flex-col">
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-white rounded-t-xl">
                     <div className="font-bold text-slate-900">{campaign.name} Message</div>
-                    <div className="text-xs text-slate-400 font-mono">Available variables: {"{{first_name}}"}, {"{{product_name}}"}</div>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="font-bold rounded-lg"
+                        onClick={() => handleWriteWithAI(campaign.id)}
+                        disabled={aiLoadingId === campaign.id}
+                      >
+                        {aiLoadingId === campaign.id ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Writing...</>
+                        ) : (
+                          'Write with AI'
+                        )}
+                      </Button>
+                      <div className="text-xs text-slate-400 font-mono">Available variables: {"{{first_name}}"}, {"{{product_name}}"}</div>
+                    </div>
                   </div>
 
                   <textarea
@@ -220,6 +319,28 @@ export default function CampaignsPage() {
                     value={edits[campaign.id] !== undefined ? edits[campaign.id] : campaign.messageText}
                     onChange={(e) => setEdits({ ...edits, [campaign.id]: e.target.value })}
                   />
+
+                  {(aiSuggestionsById[campaign.id]?.length || aiErrorById[campaign.id]) ? (
+                    <div className="px-4 pb-3 space-y-2">
+                      {aiErrorById[campaign.id] ? (
+                        <p className="text-sm font-semibold text-red-600">{aiErrorById[campaign.id]}</p>
+                      ) : null}
+                      {aiSuggestionsById[campaign.id]?.length ? (
+                        <div className="grid gap-2">
+                          {aiSuggestionsById[campaign.id].map((suggestion, index) => (
+                            <button
+                              key={`${campaign.id}-ai-${index}`}
+                              onClick={() => applySuggestion(campaign.id, suggestion)}
+                              className="text-left text-sm p-3 rounded-xl border border-indigo-100 bg-indigo-50/40 hover:bg-indigo-100 transition-colors"
+                              type="button"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   {edits[campaign.id] !== undefined && edits[campaign.id] !== campaign.messageText && (
                     <div className="p-3 bg-white border-t border-slate-100 flex justify-end rounded-b-xl">
