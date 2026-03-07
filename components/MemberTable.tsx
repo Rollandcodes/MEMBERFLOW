@@ -34,6 +34,42 @@ export default function MemberTable() {
     m.whopMemberId.toLowerCase().includes(search.toLowerCase())
   );
 
+  const escapeCsv = (value: string) => {
+    const normalized = value.replace(/\r?\n|\r/g, ' ');
+    if (/[",]/.test(normalized)) {
+      return `"${normalized.replace(/"/g, '""')}"`;
+    }
+    return normalized;
+  };
+
+  const handleExportCsv = () => {
+    if (!filtered.length) return;
+
+    const headers = ['Member ID', 'Username', 'Whop ID', 'Status', 'Joined At'];
+    const rows = filtered.map((member) => [
+      member.id,
+      member.username ?? '',
+      member.whopMemberId,
+      member.status,
+      new Date(member.joinedAt).toISOString(),
+    ]);
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => escapeCsv(String(cell))).join(','))
+      .join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `memberflow-members-${timestamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -52,7 +88,12 @@ export default function MemberTable() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="rounded-xl font-bold border-gray-200">
+          <Button
+            variant="outline"
+            className="rounded-xl font-bold border-gray-200"
+            onClick={handleExportCsv}
+            disabled={filtered.length === 0}
+          >
             Export CSV
           </Button>
         </div>
