@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Send, Clock, Play, Pause, Loader2, Save, Zap, Plus, Trash2 } from "lucide-react";
@@ -15,6 +16,7 @@ type Campaign = {
 };
 
 export default function CampaignsPage() {
+  const searchParams = useSearchParams();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -28,6 +30,9 @@ export default function CampaignsPage() {
   const [sequenceOutput, setSequenceOutput] = useState("");
   const [sequenceLoading, setSequenceLoading] = useState(false);
   const [sequenceError, setSequenceError] = useState("");
+
+  const templateCreated = searchParams.get("created") === "1";
+  const templateName = searchParams.get("template") || "Template";
 
   // Local edits before saving
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -246,6 +251,14 @@ export default function CampaignsPage() {
           <Plus className="h-5 w-5 mr-2" /> Create New Automation
         </Button>
       </div>
+
+      {templateCreated && (
+        <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm font-semibold text-green-800">
+            {templateName} has been added to your campaigns.
+          </p>
+        </div>
+      )}
 
       <Card className="border border-slate-200 rounded-3xl shadow-sm">
         <CardHeader>
