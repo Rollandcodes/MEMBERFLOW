@@ -18,12 +18,13 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [aiLoadingId, setAiLoadingId] = useState<string | null>(null);
-  const [aiErrorById, setAiErrorById] = useState<Record<string, string>>({});
-  const [aiSuggestionsById, setAiSuggestionsById] = useState<Record<string, string[]>>({});
-  const [communityName, setCommunityName] = useState("My Community");
-  const [niche, setNiche] = useState("");
-  const [tone, setTone] = useState("friendly");
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiModalCampaignId, setAiModalCampaignId] = useState<string | null>(null);
+  const [aiModalNiche, setAiModalNiche] = useState("");
+  const [aiModalTone, setAiModalTone] = useState<"friendly" | "professional" | "hype">("friendly");
+  const [aiModalLoading, setAiModalLoading] = useState(false);
+  const [aiModalError, setAiModalError] = useState("");
+  const [aiModalSuggestions, setAiModalSuggestions] = useState<string[]>([]);
   const [sequencePrompt, setSequencePrompt] = useState("I run a crypto trading community");
   const [sequenceOutput, setSequenceOutput] = useState("");
   const [sequenceLoading, setSequenceLoading] = useState(false);
@@ -158,50 +159,54 @@ export default function CampaignsPage() {
     }
   };
 
-  const handleWriteWithAI = async (campaignId: string) => {
-    if (!niche.trim()) {
-      setAiErrorById((prev) => ({ ...prev, [campaignId]: "Please enter your niche first." }));
+  const openAiModal = (campaignId: string) => {
+    setAiModalCampaignId(campaignId);
+    setAiModalOpen(true);
+    setAiModalError("");
+    setAiModalSuggestions([]);
+  };
+
+  const handleGenerateDmSuggestions = async () => {
+    if (!aiModalCampaignId) return;
+
+    if (!aiModalNiche.trim()) {
+      setAiModalError("Please enter your niche.");
       return;
     }
 
-    setAiLoadingId(campaignId);
-    setAiErrorById((prev) => ({ ...prev, [campaignId]: "" }));
+    setAiModalLoading(true);
+    setAiModalError("");
 
     try {
       const res = await fetch('/api/ai/generate-dm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          communityName,
-          niche,
-          tone,
+          communityName: 'MemberFlow Community',
+          niche: aiModalNiche,
+          tone: aiModalTone,
         }),
       });
 
       const data = await res.json();
-
-      if (!res.ok || !Array.isArray(data?.suggestions)) {
-        setAiErrorById((prev) => ({
-          ...prev,
-          [campaignId]: data?.error || 'Failed to generate suggestions.',
-        }));
-        setAiSuggestionsById((prev) => ({ ...prev, [campaignId]: [] }));
+      if (!res.ok || !Array.isArray(data)) {
+        setAiModalError((data as { error?: string })?.error || 'Failed to generate suggestions.');
+        setAiModalSuggestions([]);
         return;
       }
 
-      setAiSuggestionsById((prev) => ({ ...prev, [campaignId]: data.suggestions }));
+      setAiModalSuggestions(data);
     } catch {
-      setAiErrorById((prev) => ({
-        ...prev,
-        [campaignId]: 'Network error while generating suggestions.',
-      }));
+      setAiModalError('Network error while generating suggestions.');
     } finally {
-      setAiLoadingId(null);
+      setAiModalLoading(false);
     }
   };
 
-  const applySuggestion = (campaignId: string, suggestion: string) => {
-    setEdits((prev) => ({ ...prev, [campaignId]: suggestion }));
+  const applyDmSuggestion = (suggestion: string) => {
+    if (!aiModalCampaignId) return;
+    setEdits((prev) => ({ ...prev, [aiModalCampaignId]: suggestion }));
+    setAiModalOpen(false);
   };
 
   const handleGenerateSequence = async () => {
@@ -275,38 +280,6 @@ export default function CampaignsPage() {
           </p>
         </div>
       )}
-
-      <Card className="border border-slate-200 rounded-3xl shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-lg font-black text-slate-900">AI DM Writer</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input
-              className="h-11 rounded-xl border border-slate-200 px-3 text-sm"
-              placeholder="Community name"
-              value={communityName}
-              onChange={(e) => setCommunityName(e.target.value)}
-            />
-            <input
-              className="h-11 rounded-xl border border-slate-200 px-3 text-sm"
-              placeholder="Niche (e.g. crypto trading, fitness coaching)"
-              value={niche}
-              onChange={(e) => setNiche(e.target.value)}
-            />
-            <select
-              className="h-11 rounded-xl border border-slate-200 px-3 text-sm bg-white"
-              value={tone}
-              onChange={(e) => setTone(e.target.value)}
-            >
-              <option value="friendly">Friendly</option>
-              <option value="professional">Professional</option>
-              <option value="bold">Bold</option>
-              <option value="playful">Playful</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card className="border border-slate-200 rounded-3xl shadow-sm">
         <CardHeader>
@@ -409,15 +382,8 @@ export default function CampaignsPage() {
                         size="sm"
                         variant="outline"
                         className="font-bold rounded-lg"
-                        onClick={() => handleWriteWithAI(campaign.id)}
-                        disabled={aiLoadingId === campaign.id}
-                      >
-                        {aiLoadingId === campaign.id ? (
-                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Writing...</>
-                        ) : (
-                          'Write with AI'
-                        )}
-                      </Button>
+                        onClick={() => openAiModal(campaign.id)}
+                      >Write with AI ✨</Button>
                       <div className="text-xs text-slate-400 font-mono">Available variables: {"{{first_name}}"}, {"{{product_name}}"}</div>
                     </div>
                   </div>
@@ -430,28 +396,6 @@ export default function CampaignsPage() {
                     value={edits[campaign.id] !== undefined ? edits[campaign.id] : campaign.messageText}
                     onChange={(e) => setEdits({ ...edits, [campaign.id]: e.target.value })}
                   />
-
-                  {(aiSuggestionsById[campaign.id]?.length || aiErrorById[campaign.id]) ? (
-                    <div className="px-4 pb-3 space-y-2">
-                      {aiErrorById[campaign.id] ? (
-                        <p className="text-sm font-semibold text-red-600">{aiErrorById[campaign.id]}</p>
-                      ) : null}
-                      {aiSuggestionsById[campaign.id]?.length ? (
-                        <div className="grid gap-2">
-                          {aiSuggestionsById[campaign.id].map((suggestion, index) => (
-                            <button
-                              key={`${campaign.id}-ai-${index}`}
-                              onClick={() => applySuggestion(campaign.id, suggestion)}
-                              className="text-left text-sm p-3 rounded-xl border border-indigo-100 bg-indigo-50/40 hover:bg-indigo-100 transition-colors"
-                              type="button"
-                            >
-                              {suggestion}
-                            </button>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
 
                   {edits[campaign.id] !== undefined && edits[campaign.id] !== campaign.messageText && (
                     <div className="p-3 bg-white border-t border-slate-100 flex justify-end rounded-b-xl">
@@ -475,6 +419,79 @@ export default function CampaignsPage() {
           ))
         )}
       </div>
+
+      {aiModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="w-full max-w-2xl rounded-3xl bg-white border border-slate-200 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <h2 className="text-lg font-black text-slate-900">Write with AI ✨</h2>
+              <button
+                type="button"
+                onClick={() => setAiModalOpen(false)}
+                className="rounded-lg px-2 py-1 text-sm font-semibold text-slate-500 hover:bg-slate-100"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="space-y-4 px-6 py-5">
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Niche</label>
+                <input
+                  className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"
+                  placeholder="e.g. crypto trading, fitness coaching"
+                  value={aiModalNiche}
+                  onChange={(e) => setAiModalNiche(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Tone</label>
+                <select
+                  className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm bg-white"
+                  value={aiModalTone}
+                  onChange={(e) => setAiModalTone(e.target.value as "friendly" | "professional" | "hype")}
+                >
+                  <option value="friendly">Friendly</option>
+                  <option value="professional">Professional</option>
+                  <option value="hype">Hype</option>
+                </select>
+              </div>
+
+              <Button
+                onClick={handleGenerateDmSuggestions}
+                disabled={aiModalLoading}
+                className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl"
+              >
+                {aiModalLoading ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
+                ) : (
+                  'Generate 3 Suggestions'
+                )}
+              </Button>
+
+              {aiModalError ? (
+                <p className="text-sm font-semibold text-red-600">{aiModalError}</p>
+              ) : null}
+
+              {aiModalSuggestions.length ? (
+                <div className="grid gap-2">
+                  {aiModalSuggestions.map((suggestion, index) => (
+                    <button
+                      key={`modal-ai-${index}`}
+                      onClick={() => applyDmSuggestion(suggestion)}
+                      className="text-left text-sm p-3 rounded-xl border border-indigo-100 bg-indigo-50/40 hover:bg-indigo-100 transition-colors"
+                      type="button"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

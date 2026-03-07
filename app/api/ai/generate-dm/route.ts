@@ -38,19 +38,18 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         temperature: 0.8,
-        max_tokens: 500,
-        response_format: { type: 'json_object' },
+        max_tokens: 400,
         messages: [
           {
             role: 'system',
             content:
-              'You write short, high-converting community welcome DMs. Return strict JSON only with shape {"suggestions":["...","...","..."]}. Exactly 3 suggestions, no markdown.',
+              'You are an expert community manager who writes high-converting welcome DMs for online communities.',
           },
           {
             role: 'user',
-            content: `Generate 3 DM welcome message suggestions for community "${communityName}" in niche "${niche}" with a ${tone} tone. Include {{first_name}} naturally. Keep each between 140 and 240 characters.`,
+            content: `Community: ${communityName}\nNiche: ${niche}\nTone: ${tone}\n\nGenerate exactly 3 short welcome DM suggestions. Include {{first_name}} naturally. Respond ONLY with a valid JSON array of strings.`,
           },
         ],
       }),
@@ -75,8 +74,8 @@ export async function POST(request: NextRequest) {
     let suggestions: string[] = []
     try {
       const parsed = JSON.parse(content)
-      if (Array.isArray(parsed?.suggestions)) {
-        suggestions = parsed.suggestions
+      if (Array.isArray(parsed)) {
+        suggestions = parsed
           .map((item: unknown) => (typeof item === 'string' ? item.trim() : ''))
           .filter(Boolean)
           .slice(0, 3)
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
     } catch {
       suggestions = content
         .split('\n')
-        .map((line: string) => line.replace(/^[-*\d.\s]+/, '').trim())
+        .map((line: string) => line.replace(/^[-*\d.\s]+/, '').trim().replace(/^"|"$/g, ''))
         .filter(Boolean)
         .slice(0, 3)
     }
@@ -96,7 +95,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ suggestions })
+    return NextResponse.json(suggestions)
   } catch (error) {
     console.error('[AI DM] Unexpected generation error', error)
     return NextResponse.json({ error: 'Unexpected generation error' }, { status: 500 })
