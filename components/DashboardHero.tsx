@@ -20,7 +20,7 @@ export default function DashboardHero({ communityName }: DashboardHeroProps) {
         <div className="space-y-4 max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur-md">
             <Sparkles className="h-3 w-3" />
-            <span>MemberFlow Pro Activated</span>
+            <span>Automation Engine Active</span>
           </div>
           
           <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">

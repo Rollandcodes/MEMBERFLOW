@@ -74,8 +74,8 @@ export default function NavigationSidebar() {
 
       <div className="p-4 mt-auto">
         <div className="bg-indigo-50 rounded-3xl p-6 mb-6">
-          <div className="text-sm font-black text-indigo-900 mb-1">Pro Plan</div>
-          <div className="text-xs text-indigo-600 font-bold mb-4">Unlimited members &amp; AI</div>
+          <div className="text-sm font-black text-indigo-900 mb-1">Plan &amp; Limits</div>
+          <div className="text-xs text-indigo-600 font-bold mb-4">Review usage, billing, and upgrade options.</div>
           <div className="w-full bg-indigo-200 rounded-full h-1.5 mb-4">
             <div className="bg-indigo-600 h-1.5 rounded-full w-3/4" />
           </div>
@@ -83,7 +83,7 @@ export default function NavigationSidebar() {
             href="/app/billing"
             className="block w-full py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-colors text-center"
           >
-            Upgrade Now
+            Manage Plans
           </Link>
         </div>
 
