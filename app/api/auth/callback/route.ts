@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     if (error || !code) {
         console.log('[Callback] No code or error param:', error)
-        return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
+        return NextResponse.redirect(new URL('/?error=missing_code', request.url))
     }
 
     try {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 
         if (!tokenRes.ok) {
             console.error('[Callback] Token exchange failed:', tokenText)
-            return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
+            return NextResponse.redirect(new URL(`/?error=token_exchange_failed`, request.url))
         }
 
         const tokenData = JSON.parse(tokenText)
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
         if (!accessToken) {
             console.error('[Callback] No access_token in response:', tokenData)
-            return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
+            return NextResponse.redirect(new URL('/?error=no_access_token', request.url))
         }
 
         // Step 2: Get company info
@@ -87,9 +87,9 @@ export async function GET(request: NextRequest) {
         const cookieStore = cookies()
         cookieStore.set('memberflow_company_id', company.id, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true, // Always true on Vercel
             sameSite: 'lax',
-            maxAge: 60 * 60 * 24 * 30,
+            maxAge: 60 * 60 * 24 * 30, // 30 days
             path: '/',
         })
 
@@ -97,7 +97,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL('/app/dashboard', request.url))
 
     } catch (err) {
-        console.error('[Callback] Unexpected error:', err)
-        return NextResponse.redirect(new URL('/?error=auth_failed', request.url))
+        return NextResponse.redirect(new URL('/?error=unexpected_error', request.url))
     }
 }
