@@ -101,7 +101,9 @@ export default function DiscoverPage() {
                 return;
             }
 
-            router.push(`/app/campaigns?created=1&template=${encodeURIComponent(item.title)}`);
+            router.push(
+                `/app/campaigns?created=1&template=${encodeURIComponent(item.title)}&campaignId=${encodeURIComponent(data.campaign.id)}`
+            );
         } catch {
             setError("Network error while applying template.");
             setCreatingId(null);

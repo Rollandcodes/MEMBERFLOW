@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,8 @@ export default function CampaignsPage() {
 
   const templateCreated = searchParams.get("created") === "1";
   const templateName = searchParams.get("template") || "Template";
+  const focusCampaignId = searchParams.get("campaignId");
+  const editorRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   // Local edits before saving
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -91,6 +93,17 @@ export default function CampaignsPage() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (!focusCampaignId || campaigns.length === 0) return;
+
+    const target = editorRefs.current[focusCampaignId];
+    if (!target) return;
+
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+    target.focus();
+    target.setSelectionRange(target.value.length, target.value.length);
+  }, [focusCampaignId, campaigns]);
 
   const handleToggle = async (id: string, currentStatus: boolean) => {
     // Optimistic update
@@ -332,7 +345,10 @@ export default function CampaignsPage() {
           </div>
         ) : (
           campaigns.map((campaign) => (
-            <Card key={campaign.id} className="border-none shadow-sm rounded-3xl overflow-hidden">
+            <Card
+              key={campaign.id}
+              className={`border-none shadow-sm rounded-3xl overflow-hidden ${focusCampaignId === campaign.id ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
+            >
               <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
 
               <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8">
@@ -405,6 +421,9 @@ export default function CampaignsPage() {
 
                   <textarea
                     className="w-full flex-1 min-h-[160px] p-4 bg-transparent border-none resize-none focus:ring-0 text-slate-700 text-sm leading-relaxed"
+                    ref={(el) => {
+                      editorRefs.current[campaign.id] = el;
+                    }}
                     value={edits[campaign.id] !== undefined ? edits[campaign.id] : campaign.messageText}
                     onChange={(e) => setEdits({ ...edits, [campaign.id]: e.target.value })}
                   />
