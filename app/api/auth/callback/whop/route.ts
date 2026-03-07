@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const code = searchParams.get('code')
     const error = searchParams.get('error')
+    const state = searchParams.get('state')
 
     console.log('[Callback] code:', code, 'error:', error)
 
@@ -21,21 +22,27 @@ export async function GET(request: NextRequest) {
 
     const cookieStore = await cookies()
     const codeVerifier = cookieStore.get('pkce_verifier')?.value
+    const expectedState = cookieStore.get('oauth_state')?.value
 
     if (!codeVerifier) {
         return NextResponse.redirect(new URL('/?error=missing_verifier', request.url))
+    }
+
+    if (!state || !expectedState || state !== expectedState) {
+        return NextResponse.redirect(new URL('/?error=invalid_oauth_state', request.url))
     }
 
     try {
         // Step 1: Exchange code for token (OAuth2 standard requires form-urlencoded)
         const clientId = process.env.WHOP_CLIENT_ID || '';
         const clientSecret = process.env.WHOP_CLIENT_SECRET || '';
+        const redirectUri = process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback/whop';
         const body = new URLSearchParams({
             grant_type: 'authorization_code',
             code: code,
             client_id: clientId,
             client_secret: clientSecret,
-            redirect_uri: process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback/whop',
+            redirect_uri: redirectUri,
             code_verifier: codeVerifier,
         });
 
@@ -108,6 +115,13 @@ export async function GET(request: NextRequest) {
 
         // One-time PKCE secret should not persist after a successful exchange.
         cookieStore.set('pkce_verifier', '', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 0,
+            path: '/',
+        })
+        cookieStore.set('oauth_state', '', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
