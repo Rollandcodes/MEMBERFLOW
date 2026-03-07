@@ -81,13 +81,19 @@ export async function getSubscriptionStatus(
   if (!accessToken) return fallback;
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000);
+
     const res = await fetch('https://api.whop.com/v5/memberships?status=active', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
       cache: 'no-store',
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!res.ok) {
       return fallback;
