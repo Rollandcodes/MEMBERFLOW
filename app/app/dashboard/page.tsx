@@ -15,6 +15,7 @@ import WhopCheckout from "@/components/WhopCheckout";
 export default async function DashboardPage() {
   const cookieStore = cookies();
   const companyId = cookieStore.get("memberflow_company_id")?.value;
+  const onboardingCompleted = cookieStore.get("memberflow_onboarding_completed")?.value === "1";
 
   if (!companyId) {
     redirect("/"); // Middleware also catches this, but adding for type safety
@@ -78,7 +79,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 pb-12 relative">
-      {activeCampaignsCount === 0 && <OnboardingWizard companyName={communityName} />}
+      {activeCampaignsCount === 0 && !onboardingCompleted && <OnboardingWizard companyName={communityName} />}
 
       {hitAnyLimit && (
         <div className="bg-amber-100 border-l-4 border-amber-500 text-amber-900 p-4 rounded-r-lg flex items-center justify-between mb-8 shadow-sm">

@@ -17,6 +17,8 @@ export default function OnboardingWizard({ companyName }: { companyName: string 
     setIsSubmitting(true);
     // In a real app we submit to an API route to create the campaign here.
     setTimeout(() => {
+      // Persist completion so the welcome wizard does not reopen on refresh.
+      document.cookie = 'memberflow_onboarding_completed=1; path=/; max-age=31536000; samesite=lax';
       window.location.reload();
     }, 1500);
   };
