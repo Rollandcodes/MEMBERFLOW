@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
+import WhopCheckout from '@/components/WhopCheckout';
 
 export default function PricingPage() {
     return (
@@ -99,9 +100,11 @@ export default function PricingPage() {
                                     </li>
                                 </ul>
                             </div>
-                            <Button className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25" asChild>
-                                <Link href="/app/dashboard">Upgrade to Growth</Link>
-                            </Button>
+                            <WhopCheckout
+                                planId={process.env.NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID || 'plan_moC2bR46VnYNr'}
+                                buttonText="Upgrade to Growth"
+                                className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25"
+                            />
                         </div>
 
                         {/* Pro Tier */}
@@ -132,9 +135,11 @@ export default function PricingPage() {
                                     </li>
                                 </ul>
                             </div>
-                            <Button className="w-full bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl" asChild>
-                                <Link href="/app/dashboard">Upgrade to Pro</Link>
-                            </Button>
+                            <WhopCheckout
+                                planId={process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || 'plan_FhYLwoLfNxTCS'}
+                                buttonText="Upgrade to Pro"
+                                className="w-full bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl"
+                            />
                         </div>
                     </div>
                 </div>

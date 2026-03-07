@@ -4,32 +4,36 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Zap } from 'lucide-react';
+import Link from 'next/link';
+import WhopCheckout from './WhopCheckout';
 
 const plans = [
   {
     name: 'Free',
     price: '$0',
-    description: 'Perfect for small communities starting out.',
-    features: ['Up to 100 members', '1 active campaign', 'Basic analytics', 'Community support'],
+    description: 'Perfect for new creators just starting out.',
+    features: ['1 Community', '100 Automated Messages / mo', 'Standard Welcome DM'],
     cta: 'Current Plan',
     current: true,
   },
   {
-    name: 'Pro',
-    price: '$29',
-    description: 'Advanced automation for growing creators.',
-    features: ['Unlimited members', 'Unlimited campaigns', 'Advanced AI sequences', 'Priority support', 'Custom webhooks'],
-    cta: 'Upgrade to Pro',
+    name: 'Growth',
+    price: '$19',
+    description: 'Best fit for your current automation + AI feature set.',
+    features: ['Unlimited Communities', '2,500 Automated Messages / mo', 'Custom Drip Sequences', 'Priority Support'],
+    cta: 'Upgrade to Growth',
     current: false,
     highlight: true,
+    planId: process.env.NEXT_PUBLIC_WHOP_GROWTH_PLAN_ID || 'plan_moC2bR46VnYNr',
   },
   {
-    name: 'Business',
-    price: '$99',
-    description: 'Scale your community business with ease.',
-    features: ['Everything in Pro', 'Multiple Whop accounts', 'Dedicated account manager', 'API access', 'SLA guarantee'],
-    cta: 'Contact Sales',
+    name: 'Pro',
+    price: '$49',
+    description: 'For larger communities that need max scale.',
+    features: ['Unlimited Communities', 'Unlimited Automated Messages', 'Advanced Custom Webhooks', 'Dedicated Success Manager'],
+    cta: 'Upgrade to Pro',
     current: false,
+    planId: process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || 'plan_FhYLwoLfNxTCS',
   },
 ];
 
@@ -68,12 +72,20 @@ export default function BillingPlans() {
               </ul>
             </CardContent>
             <CardFooter>
-              <Button 
-                className={`w-full py-6 rounded-2xl font-bold transition-all ${plan.current ? 'bg-gray-100 text-gray-500 hover:bg-gray-100 cursor-default' : plan.highlight ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200' : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'}`}
-                disabled={plan.current}
-              >
-                {plan.cta}
-              </Button>
+              {plan.current ? (
+                <Button
+                  className="w-full py-6 rounded-2xl font-bold bg-gray-100 text-gray-500 hover:bg-gray-100 cursor-default"
+                  disabled
+                >
+                  {plan.cta}
+                </Button>
+              ) : (
+                <WhopCheckout
+                  planId={plan.planId}
+                  buttonText={plan.cta}
+                  className={`w-full py-6 rounded-2xl font-bold transition-all ${plan.highlight ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200' : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50'}`}
+                />
+              )}
             </CardFooter>
           </Card>
         ))}
@@ -90,8 +102,8 @@ export default function BillingPlans() {
               <p className="text-gray-600 font-medium">For communities with over 50,000 members, we offer tailored pricing and infrastructure.</p>
             </div>
           </div>
-          <Button variant="outline" className="bg-white border-gray-200 text-gray-900 font-bold px-8 py-6 rounded-2xl hover:bg-gray-50 transition-all">
-            Talk to Enterprise
+          <Button asChild variant="outline" className="bg-white border-gray-200 text-gray-900 font-bold px-8 py-6 rounded-2xl hover:bg-gray-50 transition-all">
+            <Link href="/pricing">View Full Pricing</Link>
           </Button>
         </div>
       </Card>
