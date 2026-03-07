@@ -5,21 +5,17 @@ export type SubscriptionStatus = {
   daysRemaining: number | null;
   isCancelling: boolean;
   isPastDue: boolean;
+  manageUrl?: string | null;
 };
 
 type WhopMembership = {
-  id?: string;
   status?: string;
   cancel_at_period_end?: boolean;
-  is_past_due?: boolean;
-  payment_status?: string;
-  current_period_end?: string | number | null;
-  expires_at?: string | number | null;
-  renewal_date?: string | number | null;
-  plan_id?: string | null;
-  product_id?: string | null;
-  plan?: { id?: string | null } | null;
-  product?: { id?: string | null } | null;
+  renewal_period_end?: string | number | null;
+  manage_url?: string | null;
+  product?: {
+    title?: string | null;
+  } | null;
 };
 
 const dayMs = 24 * 60 * 60 * 1000;
@@ -53,47 +49,38 @@ function pickPrimaryMembership(memberships: WhopMembership[]): WhopMembership | 
   if (!memberships.length) return null;
 
   const withExpiry = memberships
-    .map((membership) => {
-      const expiresAt =
-        parseDate(membership.current_period_end) ||
-        parseDate(membership.expires_at) ||
-        parseDate(membership.renewal_date);
-      return { membership, expiresAt };
-    })
+    .map((membership) => ({
+      membership,
+      expiresAt: parseDate(membership.renewal_period_end),
+    }))
     .sort((a, b) => (b.expiresAt?.getTime() || 0) - (a.expiresAt?.getTime() || 0));
 
   return withExpiry[0]?.membership || memberships[0];
 }
 
-export async function getSubscriptionStatus(
-  accessToken: string | null | undefined,
-  previousPlan: 'free' | 'pro' = 'free'
-): Promise<SubscriptionStatus> {
+export async function getUserSubscription(accessToken: string): Promise<SubscriptionStatus> {
   const fallback: SubscriptionStatus = {
-    isActive: true,
-    plan: previousPlan,
+    isActive: false,
+    plan: 'free',
     expiresAt: null,
     daysRemaining: null,
     isCancelling: false,
     isPastDue: false,
+    manageUrl: null,
   };
 
-  if (!accessToken) return fallback;
+  if (!accessToken) {
+    return fallback;
+  }
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 4000);
-
-    const res = await fetch('https://api.whop.com/v5/memberships?status=active', {
+    const res = await fetch('https://api.whop.com/v5/memberships', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
       cache: 'no-store',
-      signal: controller.signal,
     });
-
-    clearTimeout(timeout);
 
     if (!res.ok) {
       return fallback;
@@ -106,42 +93,17 @@ export async function getSubscriptionStatus(
         ? (raw.data as WhopMembership[])
         : [];
 
-    const activeMemberships = memberships.filter(
-      (membership) => !membership.status || membership.status.toLowerCase() === 'active'
-    );
+    const primary = pickPrimaryMembership(memberships);
+    const activeMembership = memberships.find((membership) => (membership.status || '').toLowerCase() === 'active');
+    const pastDueMembership = memberships.find((membership) => (membership.status || '').toLowerCase() === 'past_due');
 
-    const primary = pickPrimaryMembership(activeMemberships);
-    const proPlanId = process.env.NEXT_PUBLIC_WHOP_PRO_PLAN_ID || process.env.WHOP_PRO_PLAN_ID || '';
-
-    const hasProMembership = activeMemberships.some((membership) => {
-      const membershipPlanIds = [
-        membership.plan_id,
-        membership.product_id,
-        membership.plan?.id,
-        membership.product?.id,
-      ].filter(Boolean) as string[];
-
-      if (!proPlanId) {
-        return membershipPlanIds.length > 0;
-      }
-
-      return membershipPlanIds.includes(proPlanId);
-    });
-
-    const plan: 'free' | 'pro' = hasProMembership ? 'pro' : 'free';
-    const expiresAt = primary
-      ? parseDate(primary.current_period_end) || parseDate(primary.expires_at) || parseDate(primary.renewal_date)
-      : null;
-
-    const isCancelling = Boolean(primary?.cancel_at_period_end);
-    const isPastDue = Boolean(
-      primary?.is_past_due ||
-        (primary?.payment_status || '').toLowerCase() === 'past_due' ||
-        (primary?.status || '').toLowerCase() === 'past_due'
-    );
-
-    // Free users can remain active without a paid membership.
-    const isActive = activeMemberships.length > 0 ? true : previousPlan !== 'pro';
+    const targetMembership = activeMembership || pastDueMembership || primary;
+    const productTitle = targetMembership?.product?.title || '';
+    const plan: 'free' | 'pro' = /pro/i.test(productTitle) ? 'pro' : 'free';
+    const isActive = Boolean(activeMembership);
+    const expiresAt = parseDate(targetMembership?.renewal_period_end);
+    const isCancelling = Boolean(targetMembership?.cancel_at_period_end);
+    const isPastDue = Boolean(pastDueMembership);
 
     return {
       isActive,
@@ -150,8 +112,34 @@ export async function getSubscriptionStatus(
       daysRemaining: getDaysRemaining(expiresAt),
       isCancelling,
       isPastDue,
+      manageUrl: targetMembership?.manage_url || null,
     };
   } catch {
     return fallback;
   }
+}
+
+// Backward-compatible export used elsewhere in the app.
+export async function getSubscriptionStatus(
+  accessToken: string | null | undefined,
+  previousPlan: 'free' | 'pro' = 'free'
+): Promise<SubscriptionStatus> {
+  if (!accessToken) {
+    return {
+      isActive: previousPlan === 'free',
+      plan: previousPlan,
+      expiresAt: null,
+      daysRemaining: null,
+      isCancelling: false,
+      isPastDue: false,
+      manageUrl: null,
+    };
+  }
+
+  const result = await getUserSubscription(accessToken);
+  if (!result.isActive && previousPlan === 'free') {
+    return { ...result, isActive: true, plan: 'free' };
+  }
+
+  return result;
 }

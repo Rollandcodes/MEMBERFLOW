@@ -201,6 +201,10 @@ export default function PrivacyPage() {
               Our hosting infrastructure provider. No personally identifiable
               data is exposed to Vercel beyond standard server request logs.
             </Item>
+            <Item title="OpenAI API">
+              When you use AI features (DM writing, sequence generation, churn insights), relevant prompt text is securely sent to OpenAI to generate output.
+              We do not sell this data or use it for advertising.
+            </Item>
           </ul>
         </Section>
 
@@ -242,7 +246,14 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section number="7" title="Changes to This Policy">
+        <Section number="7" title="Cookies">
+          <p className="text-white/60 text-sm leading-relaxed">
+            MemberFlow uses essential session cookies for authentication only (for example, to keep you signed in and scoped to your connected Whop company).
+            We do not use third-party advertising cookies.
+          </p>
+        </Section>
+
+        <Section number="8" title="Changes to This Policy">
           <p className="text-white/60 text-sm leading-relaxed">
             We may update this Privacy Policy from time to time. When we do, we
             will update the &quot;Last updated&quot; date at the top of the page
@@ -252,7 +263,7 @@ export default function PrivacyPage() {
           </p>
         </Section>
 
-        <Section number="8" title="Contact Us">
+        <Section number="9" title="Contact Us">
           <p className="text-white/60 text-sm leading-relaxed">
             If you have questions, concerns, or requests regarding this Privacy
             Policy, please contact us at:

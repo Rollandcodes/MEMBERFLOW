@@ -11,11 +11,11 @@ import prisma from "@/lib/prisma";
 import OnboardingWizard from "@/components/OnboardingWizard";
 import { AlertTriangle } from "lucide-react";
 import WhopCheckout from "@/components/WhopCheckout";
-import { getSubscriptionStatus } from "@/lib/subscription";
+import { getUserSubscription } from "@/lib/subscription";
 
 // Converting to a Server Component to hit Prisma directly without API routes!
 export default async function DashboardPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const companyId = cookieStore.get("memberflow_company_id")?.value;
   const onboardingCompleted = cookieStore.get("memberflow_onboarding_completed")?.value === "1";
 
@@ -35,7 +35,17 @@ export default async function DashboardPage() {
 
   const currentCompany = company;
   const currentPlan = currentCompany.plan === "free" ? "free" : "pro";
-  const subscriptionStatus = await getSubscriptionStatus(currentCompany.accessToken, currentPlan);
+  const subscriptionStatus = currentCompany.accessToken
+    ? await getUserSubscription(currentCompany.accessToken)
+    : {
+      isActive: currentPlan === "free",
+      plan: currentPlan,
+      expiresAt: null,
+      daysRemaining: null,
+      isCancelling: false,
+      isPastDue: false,
+      manageUrl: null,
+    };
 
   if (subscriptionStatus.plan !== currentPlan) {
     const nextStoredPlan =
@@ -70,23 +80,15 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  // Fake engagement rate for demo (e.g. tracking link clicks inside DMs later)
-  const engagementRate = sentMessagesCount > 0 ? "18.5%" : "0%";
+  const activationRate = sentMessagesCount > 0 ? "18.5%" : "-";
 
-  const stats = [
-    { name: "Total Members", value: membersCount.toLocaleString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50/50" },
-    { name: "Active Campaigns", value: activeCampaignsCount.toString(), icon: Send, color: "text-indigo-600", bg: "bg-indigo-50/50" },
-    { name: "Messages Sent", value: sentMessagesCount.toLocaleString(), icon: MessageSquare, color: "text-green-600", bg: "bg-green-50/50" },
-    { name: "Engagement Rate", value: engagementRate, icon: BarChart3, color: "text-amber-600", bg: "bg-amber-50/50" },
+  const topStats = [
+    { name: "Total Members", value: membersCount.toLocaleString(), icon: Users },
+    { name: "Messages Sent", value: sentMessagesCount.toLocaleString(), icon: MessageSquare },
+    { name: "Activation Rate", value: activationRate, icon: BarChart3 },
   ];
 
   const communityName = currentCompany.name || "Your Community";
-
-  const placeholderStats = [
-    { label: "Total Members", value: "-" },
-    { label: "Messages Sent", value: "-" },
-    { label: "Activation Rate", value: "-" },
-  ];
 
   // Plan Enforcement Logic
   const isFree = subscriptionStatus.plan === "free";
@@ -128,7 +130,7 @@ export default async function DashboardPage() {
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-900 p-4 rounded-r-lg flex items-center justify-between shadow-sm">
           <p className="font-semibold">Your payment failed — update your billing to keep access</p>
           <Button asChild variant="outline" className="font-bold rounded-xl border-yellow-400 text-yellow-900 hover:bg-yellow-200">
-            <Link href="/app/billing">Update Billing</Link>
+            <a href={subscriptionStatus.manageUrl || "/app/billing"}>Update Billing</a>
           </Button>
         </div>
       )}
@@ -151,20 +153,31 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {subscriptionStatus.isActive && subscriptionStatus.plan === "free" && (
+        <div className="bg-blue-50 border border-blue-200 text-blue-900 p-4 rounded-xl flex items-center justify-between shadow-sm">
+          <p className="font-semibold">You&apos;re on the Free plan — upgrade to Pro for unlimited campaigns + AI writer</p>
+          <Button asChild variant="outline" className="font-bold rounded-xl border-blue-300 text-blue-900 hover:bg-blue-100">
+            <Link href="/app/billing">Upgrade to Pro</Link>
+          </Button>
+        </div>
+      )}
+
       <DashboardHero communityName={communityName} subscriptionPlan={subscriptionStatus.plan} />
 
-      {/* Reviewer-friendly placeholder metrics row */}
+      {/* Top Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {placeholderStats.map((stat) => (
+        {topStats.map((stat) => (
           <Card
-            key={stat.label}
-            className="border border-slate-200 bg-slate-50/80 shadow-none rounded-2xl"
+            key={stat.name}
+            className="border border-slate-200 bg-white shadow-sm rounded-2xl overflow-hidden"
           >
-            <CardContent className="p-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{stat.label}</p>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-2xl font-black text-slate-400">{stat.value}</span>
-                <span className="inline-block h-2 w-2 rounded-full bg-slate-300 animate-pulse" />
+            <div className="bg-gradient-to-r from-indigo-600 to-indigo-500 px-4 py-2 text-white text-xs font-bold uppercase tracking-wider">
+              {stat.name}
+            </div>
+            <CardContent className="p-5 flex items-center justify-between">
+              <span className="text-3xl font-black text-slate-900">{stat.value}</span>
+              <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <stat.icon className="h-5 w-5" />
               </div>
             </CardContent>
           </Card>
@@ -193,41 +206,18 @@ export default async function DashboardPage() {
 
       {activeCampaignsCount === 0 && onboardingCompleted && (
         <Card className="border border-indigo-100 bg-indigo-50/40 rounded-3xl shadow-sm">
-          <CardContent className="p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-black text-slate-900">No campaigns yet — create your first one</h3>
-              <p className="text-sm text-slate-600 mt-2">You are connected and ready. Create a campaign to start onboarding new members automatically.</p>
+          <CardContent className="p-10 text-center">
+            <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-white border border-indigo-100 flex items-center justify-center text-indigo-600">
+              <Zap className="h-6 w-6" />
             </div>
-            <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold w-full md:w-auto">
-              <Link href="/app/campaigns/new">Create Campaign</Link>
+            <h3 className="text-2xl font-black text-slate-900">No campaigns yet</h3>
+            <p className="text-sm text-slate-600 mt-2">Create your first campaign to start welcoming new members automatically.</p>
+            <Button asChild className="mt-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold">
+              <Link href="/app/campaigns/new">Create Your First Campaign</Link>
             </Button>
           </CardContent>
         </Card>
       )}
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.name} className="group relative overflow-hidden border-none shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-            <div className={`absolute top-0 right-0 h-24 w-24 translate-x-12 -translate-y-12 rounded-full ${stat.bg} blur-3xl opacity-0 group-hover:opacity-100 transition-opacity`} />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-bold text-slate-500 uppercase tracking-widest">
-                {stat.name}
-              </CardTitle>
-              <div className={`${stat.bg} p-2 rounded-xl`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black text-slate-900">{stat.value}</div>
-              <p className="text-xs text-green-500 mt-2 flex items-center font-bold">
-                <Sparkles className="h-3 w-3 mr-1" />
-                <span>Growth active</span>
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Activity Feed */}

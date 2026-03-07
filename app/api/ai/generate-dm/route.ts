@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 type GenerateDmRequest = {
   communityName?: string
   niche?: string
-  tone?: string
+  tone?: 'friendly' | 'professional' | 'hype'
 }
 
 export async function POST(request: NextRequest) {
@@ -21,7 +21,14 @@ export async function POST(request: NextRequest) {
 
   const communityName = (body.communityName || '').trim()
   const niche = (body.niche || '').trim()
-  const tone = (body.tone || '').trim() || 'friendly'
+  const tone = body.tone || 'friendly'
+
+  if (!['friendly', 'professional', 'hype'].includes(tone)) {
+    return NextResponse.json(
+      { error: 'tone must be one of: friendly, professional, hype' },
+      { status: 400 }
+    )
+  }
 
   if (!communityName || !niche) {
     return NextResponse.json(
@@ -40,16 +47,16 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         model: 'gpt-4o',
         temperature: 0.8,
-        max_tokens: 400,
+        max_tokens: 800,
         messages: [
           {
             role: 'system',
             content:
-              'You are an expert community manager who writes high-converting welcome DMs for online communities.',
+              'You are an expert community manager who writes high-converting welcome DMs for online communities. Write short, punchy, personalized messages that feel human not robotic.',
           },
           {
             role: 'user',
-            content: `Community: ${communityName}\nNiche: ${niche}\nTone: ${tone}\n\nGenerate exactly 3 short welcome DM suggestions. Include {{first_name}} naturally. Respond ONLY with a valid JSON array of strings.`,
+            content: `Write 3 different welcome DM messages for a ${niche} community called ${communityName}. Tone: ${tone}. Each message should be 2-4 sentences max. Return ONLY a JSON array of 3 strings, no other text.`,
           },
         ],
       }),
@@ -95,7 +102,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json(suggestions)
+    return NextResponse.json({ suggestions })
   } catch (error) {
     console.error('[AI DM] Unexpected generation error', error)
     return NextResponse.json({ error: 'Unexpected generation error' }, { status: 500 })

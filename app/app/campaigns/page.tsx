@@ -17,10 +17,12 @@ type Campaign = {
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [companyPlan, setCompanyPlan] = useState<"free" | "pro">("free");
+  const [companyName, setCompanyName] = useState("MemberFlow Community");
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiModalCampaignId, setAiModalCampaignId] = useState<string | null>(null);
+  const [aiModalCommunityName, setAiModalCommunityName] = useState("MemberFlow Community");
   const [aiModalNiche, setAiModalNiche] = useState("");
   const [aiModalTone, setAiModalTone] = useState<"friendly" | "professional" | "hype">("friendly");
   const [aiModalLoading, setAiModalLoading] = useState(false);
@@ -96,6 +98,9 @@ export default function CampaignsPage() {
         } else {
           setCompanyPlan("free");
         }
+        if (typeof data.companyName === "string" && data.companyName.trim()) {
+          setCompanyName(data.companyName);
+        }
         setLoading(false);
       })
       .catch((err) => {
@@ -170,6 +175,7 @@ export default function CampaignsPage() {
     setAiModalOpen(true);
     setAiModalError("");
     setAiModalSuggestions([]);
+    setAiModalCommunityName(companyName);
   };
 
   const handleGenerateDmSuggestions = async () => {
@@ -188,20 +194,20 @@ export default function CampaignsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          communityName: 'MemberFlow Community',
+          communityName: aiModalCommunityName,
           niche: aiModalNiche,
           tone: aiModalTone,
         }),
       });
 
       const data = await res.json();
-      if (!res.ok || !Array.isArray(data)) {
+      if (!res.ok || !Array.isArray(data?.suggestions)) {
         setAiModalError((data as { error?: string })?.error || 'Failed to generate suggestions.');
         setAiModalSuggestions([]);
         return;
       }
 
-      setAiModalSuggestions(data);
+      setAiModalSuggestions(data.suggestions);
     } catch {
       setAiModalError('Network error while generating suggestions.');
     } finally {
@@ -384,7 +390,7 @@ export default function CampaignsPage() {
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-white rounded-t-xl">
                     <div className="font-bold text-slate-900">{campaign.name} Message</div>
                     <div className="flex items-center gap-3">
-                      <span title={companyPlan === "free" ? "Upgrade to Pro" : undefined} className="inline-flex">
+                      <span title={companyPlan === "free" ? "Upgrade to Pro to use AI Writer" : undefined} className="inline-flex">
                         <Button
                           size="sm"
                           variant="outline"
@@ -392,7 +398,7 @@ export default function CampaignsPage() {
                           disabled={companyPlan === "free"}
                           onClick={() => openAiModal(campaign.id)}
                         >
-                          {companyPlan === "free" ? "Upgrade to Pro" : "Write with AI ✨"}
+                          Write with AI ✨
                         </Button>
                       </span>
                       <div className="text-xs text-slate-400 font-mono">Available variables: {"{{first_name}}"}, {"{{product_name}}"}</div>
@@ -447,10 +453,20 @@ export default function CampaignsPage() {
 
             <div className="space-y-4 px-6 py-5">
               <div>
+                <label className="mb-1 block text-sm font-bold text-slate-700">Community Name</label>
+                <input
+                  className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"
+                  placeholder="MemberFlow Community"
+                  value={aiModalCommunityName}
+                  onChange={(e) => setAiModalCommunityName(e.target.value)}
+                />
+              </div>
+
+              <div>
                 <label className="mb-1 block text-sm font-bold text-slate-700">Niche</label>
                 <input
                   className="h-11 w-full rounded-xl border border-slate-200 px-3 text-sm"
-                  placeholder="e.g. crypto trading, fitness coaching"
+                  placeholder="e.g. crypto trading, fitness, dropshipping"
                   value={aiModalNiche}
                   onChange={(e) => setAiModalNiche(e.target.value)}
                 />

@@ -7,7 +7,7 @@ import { cookies } from 'next/headers';
 const oauthUrl = '/api/auth/login';
 
 export default async function LandingPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const isLoggedIn = cookieStore.has("memberflow_company_id");
 
   return (
@@ -105,27 +105,27 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="how-it-works" className="w-full py-12 md:py-20 bg-slate-50">
+        <section id="how-it-works" className="w-full py-12 md:py-20 bg-white">
           <div className="container px-4 md:px-6">
             <div className="max-w-3xl mb-10">
               <h2 className="text-3xl md:text-4xl font-black text-slate-900">How It Works</h2>
-              <p className="text-slate-500 mt-3 text-lg">Launch your onboarding automations in three simple steps.</p>
+              <p className="text-slate-500 mt-3 text-lg">Three simple steps to automate member onboarding.</p>
             </div>
             <div className="grid gap-6 md:grid-cols-3">
               <div className="rounded-3xl bg-white border border-indigo-100 p-6 shadow-sm">
-                <div className="h-10 w-10 rounded-full bg-indigo-600 text-white font-black flex items-center justify-center">1</div>
-                <h3 className="text-xl font-black mt-4">Connect your Whop community</h3>
-                <p className="text-slate-600 mt-3">Securely connect your Whop app in one click to sync members and power automations.</p>
+                <div className="h-12 w-12 rounded-full bg-indigo-600 text-white text-xl font-black flex items-center justify-center">1</div>
+                <h3 className="text-xl font-black mt-4">Connect Your Whop Community</h3>
+                <p className="text-slate-600 mt-3">Connect your Whop account with one click. We securely sync your member list automatically.</p>
               </div>
               <div className="rounded-3xl bg-white border border-indigo-100 p-6 shadow-sm">
-                <div className="h-10 w-10 rounded-full bg-indigo-600 text-white font-black flex items-center justify-center">2</div>
-                <h3 className="text-xl font-black mt-4">Build your DM sequence</h3>
-                <p className="text-slate-600 mt-3">Create a welcome flow in minutes with templates and AI-assisted message writing.</p>
+                <div className="h-12 w-12 rounded-full bg-indigo-600 text-white text-xl font-black flex items-center justify-center">2</div>
+                <h3 className="text-xl font-black mt-4">Build Your DM Sequence</h3>
+                <p className="text-slate-600 mt-3">Create personalized welcome messages and multi-step drip sequences in minutes.</p>
               </div>
               <div className="rounded-3xl bg-white border border-indigo-100 p-6 shadow-sm">
-                <div className="h-10 w-10 rounded-full bg-indigo-600 text-white font-black flex items-center justify-center">3</div>
-                <h3 className="text-xl font-black mt-4">Members get welcomed automatically</h3>
-                <p className="text-slate-600 mt-3">Every new member receives your onboarding DMs automatically so activation starts right away.</p>
+                <div className="h-12 w-12 rounded-full bg-indigo-600 text-white text-xl font-black flex items-center justify-center">3</div>
+                <h3 className="text-xl font-black mt-4">Members Get Welcomed Automatically</h3>
+                <p className="text-slate-600 mt-3">Every new member receives your sequence on autopilot. You focus on building, we handle the rest.</p>
               </div>
             </div>
           </div>
@@ -171,23 +171,38 @@ export default async function LandingPage() {
               <p className="text-slate-500 mt-3 text-lg">Simple plans for communities at every stage.</p>
             </div>
             <div className="grid gap-6 md:grid-cols-2">
-              {[
-                { name: 'Free', price: '$0', cadence: '/mo', features: ['1 campaign', '100 members/month'] },
-                { name: 'Pro', price: '$29', cadence: '/mo', features: ['Unlimited campaigns', 'Unlimited members', 'AI writer'], highlight: true },
-              ].map((plan) => (
-                <div key={plan.name} className={`rounded-3xl border p-6 shadow-sm ${plan.highlight ? 'border-indigo-300 ring-2 ring-indigo-200 bg-white' : 'border-slate-200 bg-white'}`}>
-                  <h3 className="text-xl font-black text-slate-900">{plan.name}</h3>
-                  <div className="mt-3 text-4xl font-black text-slate-900">{plan.price}<span className="text-base font-semibold text-slate-500">{plan.cadence}</span></div>
-                  <ul className="mt-5 space-y-2">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-center text-sm font-semibold text-slate-600">
-                        <CheckCircle2 className="h-4 w-4 text-indigo-600 mr-2" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-xl font-black text-slate-900">Free</h3>
+                <div className="mt-3 text-4xl font-black text-slate-900">$0<span className="text-base font-semibold text-slate-500">/month</span></div>
+                <ul className="mt-5 space-y-2">
+                  {['1 campaign', 'Up to 100 members/month', 'Basic analytics', 'Whop integration'].map((feature) => (
+                    <li key={feature} className="flex items-center text-sm font-semibold text-slate-600">
+                      <CheckCircle2 className="h-4 w-4 text-indigo-600 mr-2" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <a href={oauthUrl} className="mt-6 inline-flex items-center justify-center rounded-xl border border-indigo-200 px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-50 transition-colors">
+                  Get Started Free
+                </a>
+              </div>
+
+              <div className="rounded-3xl border-2 border-indigo-300 bg-white p-6 shadow-sm relative">
+                <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">Most Popular</span>
+                <h3 className="text-xl font-black text-slate-900">Pro</h3>
+                <div className="mt-3 text-4xl font-black text-slate-900">$29<span className="text-base font-semibold text-slate-500">/month</span></div>
+                <ul className="mt-5 space-y-2">
+                  {['Unlimited campaigns', 'Unlimited members', 'AI DM writer', 'Deep analytics', 'Priority support'].map((feature) => (
+                    <li key={feature} className="flex items-center text-sm font-semibold text-slate-600">
+                      <CheckCircle2 className="h-4 w-4 text-indigo-600 mr-2" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+                <a href={oauthUrl} className="mt-6 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition-colors">
+                  Upgrade to Pro
+                </a>
+              </div>
             </div>
             <div className="mt-8">
               <Link href="/pricing" className="inline-flex items-center text-indigo-700 hover:text-indigo-800 font-bold">
@@ -198,15 +213,14 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section id="social-proof" className="w-full py-12 md:py-20 bg-white">
+        <section id="social-proof" className="w-full py-12 md:py-20 bg-slate-50">
           <div className="container px-4 md:px-6">
-            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 md:p-10">
-              <div className="flex items-start gap-3">
-                <Quote className="h-6 w-6 text-indigo-500 mt-1" />
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900">Social Proof</h3>
-                  <p className="text-slate-600 mt-3 text-lg">"MemberFlow doubled our new member activation rate in the first week. — Alex K., Community Founder"</p>
-                </div>
+            <div className="rounded-3xl border border-indigo-100 bg-white p-8 md:p-12 text-center">
+              <Quote className="h-8 w-8 text-indigo-500 mx-auto" />
+              <p className="text-slate-700 mt-4 text-xl md:text-2xl italic leading-relaxed">
+                "MemberFlow doubled our new member activation rate in the first week. The automated welcome sequences are a game changer."
+              </p>
+              <p className="text-slate-500 mt-4 font-semibold">- Alex K., Crypto Trading Community Founder</p>
               </div>
             </div>
           </div>

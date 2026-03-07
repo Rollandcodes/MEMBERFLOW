@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     const company = await prisma.company.findUnique({
         where: { id: companyId },
-        select: { plan: true },
+        select: { plan: true, name: true },
     });
 
     const campaigns = await prisma.campaign.findMany({
@@ -21,7 +21,11 @@ export async function GET(req: NextRequest) {
         orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json({ campaigns, companyPlan: company?.plan === "free" ? "free" : "pro" });
+    return NextResponse.json({
+        campaigns,
+        companyPlan: company?.plan === "free" ? "free" : "pro",
+        companyName: company?.name || "MemberFlow Community",
+    });
 }
 
 // POST to update or create a campaign

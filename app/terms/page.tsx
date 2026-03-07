@@ -189,7 +189,14 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section number="5" title="Termination">
+        <Section number="5" title="Data Usage">
+          <p className="text-white/60 text-sm leading-relaxed">
+            We store OAuth access tokens, campaign configuration, and automation logs to operate MemberFlow. This data is used solely to authenticate your account,
+            process Whop membership events, and send the DM sequences you configure. We do not use this data for ad targeting and we do not sell it to third parties.
+          </p>
+        </Section>
+
+        <Section number="6" title="Termination">
           <ul className="space-y-3">
             <Item title="Termination by You">
               You may terminate your account at any time by contacting us at{" "}
@@ -217,7 +224,7 @@ export default function TermsPage() {
           </ul>
         </Section>
 
-        <Section number="6" title="Limitation of Liability">
+        <Section number="7" title="Limitation of Liability">
           <p className="text-white/60 text-sm leading-relaxed mb-4">
             To the fullest extent permitted by applicable law:
           </p>
@@ -244,7 +251,7 @@ export default function TermsPage() {
           </ul>
         </Section>
 
-        <Section number="7" title="Governing Law">
+        <Section number="8" title="Governing Law">
           <p className="text-white/60 text-sm leading-relaxed">
             These Terms shall be governed by and construed in accordance with
             the laws of the State of{" "}
@@ -257,7 +264,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section number="8" title="Changes to These Terms">
+        <Section number="9" title="Changes to These Terms">
           <p className="text-white/60 text-sm leading-relaxed">
             We reserve the right to modify these Terms at any time. When we
             make material changes, we will update the &quot;Last updated&quot;
@@ -268,7 +275,7 @@ export default function TermsPage() {
           </p>
         </Section>
 
-        <Section number="9" title="Contact Information">
+        <Section number="10" title="Contact Information">
           <p className="text-white/60 text-sm leading-relaxed">
             If you have any questions about these Terms, please reach out to us:
           </p>
