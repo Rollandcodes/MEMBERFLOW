@@ -2,24 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-    // Check if navigating to any /app or /dashboard path
-    if (request.nextUrl.pathname.startsWith("/app") || request.nextUrl.pathname.startsWith("/dashboard")) {
-        // Check for the auth cookie
+    // Protect all app routes, including /app/dashboard.
+    if (request.nextUrl.pathname.startsWith("/app")) {
         const hasCompanyId = request.cookies.has("memberflow_company_id");
-
         if (!hasCompanyId) {
-            // Redirect to landing page to log in via Whop
             return NextResponse.redirect(new URL("/", request.url));
         }
     }
 
-    // Allow all other routes (landing, /privacy, /terms, etc.)
     return NextResponse.next();
 }
 
 export const config = {
-    matcher: [
-        "/app/:path*",
-        "/dashboard/:path*",
-    ],
+    matcher: ["/app/:path*"],
 };

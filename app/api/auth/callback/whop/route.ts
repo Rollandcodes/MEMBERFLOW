@@ -11,11 +11,8 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error')
     const state = searchParams.get('state')
 
-    console.log('[Callback] code:', code, 'error:', error)
-
     if (error || !code) {
-        console.log('[Callback] No code or error param:', error || 'unknown');
-        // Pass through all query params for debugging (e.g. error, error_description)
+        // Pass through OAuth provider query params.
         const params = new URLSearchParams(searchParams);
         return NextResponse.redirect(new URL(`/?${params.toString()}`, request.url))
     }
@@ -51,8 +48,6 @@ export async function GET(request: NextRequest) {
             code_verifier: codeVerifier,
         };
 
-        console.log('[Callback] Attempting token exchange with Whop (JSON + PKCE)...');
-
         const tokenRes = await fetch('https://api.whop.com/oauth/token', {
             method: 'POST',
             headers: {
@@ -62,10 +57,9 @@ export async function GET(request: NextRequest) {
         })
 
         const tokenText = await tokenRes.text()
-        console.log('[Callback] Token response status:', tokenRes.status)
-        console.log('[Callback] Token response body:', tokenText)
 
         if (!tokenRes.ok) {
+            console.error('[Callback] Token exchange failed with status', tokenRes.status)
             const errorDetail = encodeURIComponent(tokenText.substring(0, 200))
             return NextResponse.redirect(new URL(`/?error=token_exchange_failed&detail=${errorDetail}`, request.url))
         }
@@ -74,7 +68,7 @@ export async function GET(request: NextRequest) {
         const accessToken = tokenData.access_token
 
         if (!accessToken) {
-            console.error('[Callback] No access_token in response:', tokenData)
+            console.error('[Callback] No access_token in token response')
             return NextResponse.redirect(new URL('/?error=no_access_token', request.url))
         }
 
@@ -86,8 +80,9 @@ export async function GET(request: NextRequest) {
         })
 
         const companyText = await companyRes.text()
-        console.log('[Callback] Company response status:', companyRes.status)
-        console.log('[Callback] Company response body:', companyText)
+        if (!companyRes.ok) {
+            console.error('[Callback] Failed to fetch company profile with status', companyRes.status)
+        }
 
         let whopCompanyId = 'unknown'
         let companyName = 'My Company'
@@ -140,11 +135,10 @@ export async function GET(request: NextRequest) {
             maxAge: 0,
             path: '/',
         })
-
-        console.log('[Callback] Success! Redirecting to dashboard')
         return NextResponse.redirect(new URL('/app/dashboard', request.url))
 
     } catch (err) {
+        console.error('[Callback] Unexpected OAuth callback error', err)
         return NextResponse.redirect(new URL('/?error=unexpected_error', request.url))
     }
 }
