@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Send, Clock, Play, Pause, Loader2, Save, Zap, Plus, Trash2 } from "lucide-react";
@@ -16,7 +15,6 @@ type Campaign = {
 };
 
 export default function CampaignsPage() {
-  const searchParams = useSearchParams();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -31,9 +29,9 @@ export default function CampaignsPage() {
   const [sequenceLoading, setSequenceLoading] = useState(false);
   const [sequenceError, setSequenceError] = useState("");
 
-  const templateCreated = searchParams.get("created") === "1";
-  const templateName = searchParams.get("template") || "Template";
-  const focusCampaignId = searchParams.get("campaignId");
+  const [templateCreated, setTemplateCreated] = useState(false);
+  const [templateName, setTemplateName] = useState("Template");
+  const [focusCampaignId, setFocusCampaignId] = useState<string | null>(null);
   const editorRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   // Local edits before saving
@@ -80,6 +78,11 @@ export default function CampaignsPage() {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setTemplateCreated(params.get("created") === "1");
+    setTemplateName(params.get("template") || "Template");
+    setFocusCampaignId(params.get("campaignId"));
+
     fetch("/api/campaigns")
       .then((res) => res.json())
       .then((data) => {
