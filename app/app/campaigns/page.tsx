@@ -24,6 +24,10 @@ export default function CampaignsPage() {
   const [communityName, setCommunityName] = useState("My Community");
   const [niche, setNiche] = useState("");
   const [tone, setTone] = useState("friendly");
+  const [sequencePrompt, setSequencePrompt] = useState("I run a crypto trading community");
+  const [sequenceOutput, setSequenceOutput] = useState("");
+  const [sequenceLoading, setSequenceLoading] = useState(false);
+  const [sequenceError, setSequenceError] = useState("");
 
   // Local edits before saving
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -179,6 +183,47 @@ export default function CampaignsPage() {
     setEdits((prev) => ({ ...prev, [campaignId]: suggestion }));
   };
 
+  const handleGenerateSequence = async () => {
+    const trimmedPrompt = sequencePrompt.trim();
+    if (!trimmedPrompt) {
+      setSequenceError('Please enter a prompt first.');
+      return;
+    }
+
+    setSequenceLoading(true);
+    setSequenceError('');
+    setSequenceOutput('');
+
+    try {
+      const res = await fetch('/api/ai/generate-sequence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: trimmedPrompt }),
+      });
+
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        setSequenceError(data?.error || 'Failed to generate sequence.');
+        setSequenceLoading(false);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        setSequenceOutput((prev) => prev + chunk);
+      }
+    } catch {
+      setSequenceError('Network error while streaming AI sequence.');
+    } finally {
+      setSequenceLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -231,6 +276,37 @@ export default function CampaignsPage() {
               <option value="playful">Playful</option>
             </select>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border border-slate-200 rounded-3xl shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-black text-slate-900">AI Sequence Writer (Streaming)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <textarea
+            className="w-full min-h-[100px] rounded-xl border border-slate-200 p-3 text-sm"
+            value={sequencePrompt}
+            onChange={(e) => setSequencePrompt(e.target.value)}
+            placeholder="Describe your community and goals..."
+          />
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleGenerateSequence}
+              disabled={sequenceLoading}
+              className="bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl"
+            >
+              {sequenceLoading ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
+              ) : (
+                'Generate Sequence'
+              )}
+            </Button>
+          </div>
+          {sequenceError ? <p className="text-sm font-semibold text-red-600">{sequenceError}</p> : null}
+          <pre className="min-h-[180px] whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+            {sequenceOutput || 'Streaming output will appear here in real time...'}
+          </pre>
         </CardContent>
       </Card>
 
