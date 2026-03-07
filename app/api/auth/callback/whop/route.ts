@@ -20,26 +20,22 @@ export async function GET(request: NextRequest) {
         // Step 1: Exchange code for token (OAuth2 standard requires form-urlencoded)
         const clientId = process.env.WHOP_CLIENT_ID || '';
         const clientSecret = process.env.WHOP_CLIENT_SECRET || '';
-        // OAuth2 standard: credentials in the Authorization header AND/OR body as JSON
-        const authHeader = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
-
-        const payload = {
+        const body = new URLSearchParams({
             grant_type: 'authorization_code',
             code: code,
             client_id: clientId,
             client_secret: clientSecret,
             redirect_uri: process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback/whop',
-        };
+        });
 
-        console.log('[Callback] Attempting token exchange with Whop (JSON)...');
+        console.log('[Callback] Attempting token exchange with Whop (Form-UrlEncoded)...');
 
         const tokenRes = await fetch('https://api.whop.com/oauth/token', {
             method: 'POST',
             headers: {
-                'Authorization': authHeader,
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: JSON.stringify(payload),
+            body: body.toString(),
         })
 
         const tokenText = await tokenRes.text()
