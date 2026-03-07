@@ -87,8 +87,7 @@ export async function GET(request: NextRequest) {
         const cookieStore = cookies()
         cookieStore.set('memberflow_company_id', company.id, {
             httpOnly: true,
-            secure: true, // Always true on Vercel
-            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
             maxAge: 60 * 60 * 24 * 30, // 30 days
             path: '/',
         })
