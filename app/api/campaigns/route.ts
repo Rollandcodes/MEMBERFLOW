@@ -1,3 +1,4 @@
+/// <reference types="next" />
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from "next/server";
