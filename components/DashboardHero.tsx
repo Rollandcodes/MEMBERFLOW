@@ -3,6 +3,7 @@
 import React from 'react';
 import { Sparkles, ArrowRight, Zap, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 interface DashboardHeroProps {
   communityName: string;
@@ -31,12 +32,14 @@ export default function DashboardHero({ communityName }: DashboardHeroProps) {
           </p>
 
           <div className="flex flex-wrap gap-4 pt-4">
-            <Button className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold px-8 py-6 rounded-2xl shadow-lg">
-              Launch Campaign
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button asChild className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold px-8 py-6 rounded-2xl shadow-lg">
+              <Link href="/app/campaigns">
+                Launch Campaign
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
-            <Button variant="ghost" className="text-white hover:bg-white/10 font-bold px-8 py-6 rounded-2xl">
-              View Analytics
+            <Button asChild variant="ghost" className="text-white hover:bg-white/10 font-bold px-8 py-6 rounded-2xl">
+              <Link href="/app/analytics">View Analytics</Link>
             </Button>
           </div>
         </div>
