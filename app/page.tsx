@@ -53,14 +53,7 @@ export default async function LandingPage() {
                   {isLoggedIn ? "Go to Dashboard" : "Connect with Whop"}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                {!isLoggedIn && (
-                  <Link
-                    href="/app/dashboard"
-                    className="inline-flex items-center justify-center border border-indigo-200 text-indigo-600 hover:bg-indigo-50 px-8 py-4 rounded-2xl text-lg font-semibold transition-colors"
-                  >
-                    View Dashboard
-                  </Link>
-                )}
+
               </div>
             </div>
           </div>
