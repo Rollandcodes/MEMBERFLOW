@@ -1,23 +1,38 @@
-import { redirect } from 'next/navigation'
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
+import { cookies } from 'next/headers'
+
+function base64URLEncode(buffer: Buffer) {
+    return buffer
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=/g, '')
+}
 
 export async function GET() {
-    const clientId = process.env.WHOP_CLIENT_ID;
-    const redirectUri = process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback/whop';
+    const codeVerifier = base64URLEncode(crypto.randomBytes(32))
+    const codeChallenge = base64URLEncode(
+        crypto.createHash('sha256').update(codeVerifier).digest()
+    )
 
-    if (!clientId) {
-        return NextResponse.json({ error: 'WHOP_CLIENT_ID is not set in environment' }, { status: 500 });
-    }
+    const cookieStore = await cookies()
+    cookieStore.set('pkce_verifier', codeVerifier, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 600,
+        path: '/',
+    })
 
     const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
+        client_id: process.env.WHOP_CLIENT_ID!,
+        redirect_uri: 'https://memberflow-eight.vercel.app/api/auth/callback/whop',
         response_type: 'code',
         scope: 'openid email profile',
-    });
+        code_challenge: codeChallenge,
+        code_challenge_method: 'S256',
+    })
 
-    return NextResponse.redirect(
-        `https://api.whop.com/oauth/authorize?${params.toString()}`,
-        { status: 302 }
-    );
+    return NextResponse.redirect(`https://whop.com/oauth?${params.toString()}`, { status: 302 })
 }

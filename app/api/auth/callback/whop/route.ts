@@ -19,6 +19,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL(`/?${params.toString()}`, request.url))
     }
 
+    const cookieStore = await cookies()
+    const codeVerifier = cookieStore.get('pkce_verifier')?.value
+
+    if (!codeVerifier) {
+        return NextResponse.redirect(new URL('/?error=missing_verifier', request.url))
+    }
+
     try {
         // Step 1: Exchange code for token (OAuth2 standard requires form-urlencoded)
         const clientId = process.env.WHOP_CLIENT_ID || '';
@@ -29,6 +36,7 @@ export async function GET(request: NextRequest) {
             client_id: clientId,
             client_secret: clientSecret,
             redirect_uri: process.env.WHOP_REDIRECT_URI || 'https://memberflow-eight.vercel.app/api/auth/callback/whop',
+            code_verifier: codeVerifier,
         });
 
         console.log('[Callback] Attempting token exchange with Whop (Form-UrlEncoded)...');
@@ -91,11 +99,19 @@ export async function GET(request: NextRequest) {
         })
 
         // Step 4: Set cookie and redirect
-        const cookieStore = cookies()
         cookieStore.set('memberflow_company_id', company.id, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             maxAge: 60 * 60 * 24 * 30, // 30 days
+            path: '/',
+        })
+
+        // One-time PKCE secret should not persist after a successful exchange.
+        cookieStore.set('pkce_verifier', '', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 0,
             path: '/',
         })
 
