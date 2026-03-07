@@ -3,40 +3,74 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { 
-  BarChart, 
-  Bar, 
+  BarChart,
+  Bar,
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
   AreaChart,
   Area
 } from 'recharts';
-import { TrendingUp, Users, MessageSquare, DollarSign, Target, Activity } from 'lucide-react';
+import { TrendingUp, Users, MessageSquare, Target, Activity, AlertTriangle } from 'lucide-react';
 
-const performanceData = [
-  { name: 'Jan', sent: 1200, retention: 85, revenue: 4500 },
-  { name: 'Feb', sent: 2100, retention: 88, revenue: 5200 },
-  { name: 'Mar', sent: 1800, retention: 86, revenue: 4800 },
-  { name: 'Apr', sent: 2400, retention: 90, revenue: 6100 },
-  { name: 'May', sent: 3200, retention: 92, revenue: 7500 },
-  { name: 'Jun', sent: 2800, retention: 91, revenue: 6900 },
-];
+type Stats = {
+  totalSent: number;
+  totalMembers: number;
+  activeCampaigns: number;
+  retentionRate: number;
+  deliveryRate: number;
+  totalFailed: number;
+};
 
-const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
+type PerformancePoint = {
+  name: string;
+  sent: number;
+  failed: number;
+};
 
-export default function AnalyticsCharts() {
-  const [lastActiveDate, setLastActiveDate] = useState('2026-03-01');
-  const [messageOpenRate, setMessageOpenRate] = useState('48.2');
+type ChurnDefaults = {
+  lastActiveDate: string;
+  messageOpenRate: number;
+};
+
+interface AnalyticsChartsProps {
+  stats: Stats;
+  performanceData: PerformancePoint[];
+  churnDefaults: ChurnDefaults;
+}
+
+export default function AnalyticsCharts({ stats, performanceData, churnDefaults }: AnalyticsChartsProps) {
+  const [selectedRange, setSelectedRange] = useState<'30' | '90' | '365'>('30');
+  const [lastActiveDate, setLastActiveDate] = useState(churnDefaults.lastActiveDate);
+  const [messageOpenRate, setMessageOpenRate] = useState(String(churnDefaults.messageOpenRate));
   const [insights, setInsights] = useState<string[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState('');
+
+  const rangeData = (() => {
+    if (selectedRange === '30') return performanceData.slice(-1);
+    if (selectedRange === '90') return performanceData.slice(-3);
+    return performanceData;
+  })();
+
+  const trendPct = (() => {
+    if (performanceData.length < 2) return 0;
+    const last = performanceData[performanceData.length - 1].sent;
+    const prev = performanceData[performanceData.length - 2].sent;
+    if (prev === 0) return last > 0 ? 100 : 0;
+    return ((last - prev) / prev) * 100;
+  })();
+
+  const trendLabel = `${trendPct >= 0 ? '+' : ''}${trendPct.toFixed(1)}%`;
+
+  const statsCards = [
+    { title: 'Total Sent', value: stats.totalSent.toLocaleString(), icon: MessageSquare, trend: trendLabel, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { title: 'Total Members', value: stats.totalMembers.toLocaleString(), icon: Users, trend: `${stats.retentionRate.toFixed(1)}% active`, color: 'text-green-600', bg: 'bg-green-50' },
+    { title: 'Active Campaigns', value: stats.activeCampaigns.toLocaleString(), icon: Activity, trend: `${stats.deliveryRate.toFixed(1)}% delivery`, color: 'text-amber-600', bg: 'bg-amber-50' },
+    { title: 'Failed Sends', value: stats.totalFailed.toLocaleString(), icon: AlertTriangle, trend: `${(100 - stats.deliveryRate).toFixed(1)}% fail rate`, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  ];
 
   const generateChurnInsights = async () => {
     const openRateValue = Number(messageOpenRate);
@@ -80,24 +114,23 @@ export default function AnalyticsCharts() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Analytics Dashboard</h1>
-          <p className="text-muted-foreground">Track the impact of your community automation campaigns.</p>
+          <p className="text-muted-foreground">Track real campaign delivery and member health from your connected community.</p>
         </div>
         <div className="flex gap-2">
-          <select className="h-10 px-3 rounded-md border border-input bg-background text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
-            <option>Last 30 Days</option>
-            <option>Last 90 Days</option>
-            <option>This Year</option>
+          <select
+            value={selectedRange}
+            onChange={(e) => setSelectedRange(e.target.value as '30' | '90' | '365')}
+            className="h-10 px-3 rounded-md border border-input bg-background text-sm font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+          >
+            <option value="30">Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="365">Last Year</option>
           </select>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { title: 'Total Sent', value: '13,542', icon: MessageSquare, trend: '+12.5%', color: 'text-blue-600', bg: 'bg-blue-50' },
-          { title: 'Retention Rate', value: '92.4%', icon: Users, trend: '+4.2%', color: 'text-green-600', bg: 'bg-green-50' },
-          { title: 'Engagement', value: '48.2%', icon: Activity, trend: '+8.1%', color: 'text-amber-600', bg: 'bg-amber-50' },
-          { title: 'Influenced Revenue', value: '$24,850', icon: DollarSign, trend: '+15.3%', color: 'text-indigo-600', bg: 'bg-indigo-50' },
-        ].map((stat) => (
+        {statsCards.map((stat) => (
           <Card key={stat.title} className="border-none shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -120,15 +153,15 @@ export default function AnalyticsCharts() {
           <CardHeader>
             <CardTitle className="flex items-center text-lg">
               <TrendingUp className="mr-2 h-5 w-5 text-indigo-500" />
-              Campaign Reach & Revenue
+              Campaign Delivery Trend
             </CardTitle>
-            <CardDescription>Messages sent vs influenced monthly revenue.</CardDescription>
+            <CardDescription>Sent vs failed message volumes over time.</CardDescription>
           </CardHeader>
           <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={performanceData}>
+              <AreaChart data={rangeData}>
                 <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorSent" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
                     <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
                   </linearGradient>
@@ -139,8 +172,8 @@ export default function AnalyticsCharts() {
                 <Tooltip 
                   contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" name="Revenue ($)" />
-                <Bar dataKey="sent" fill="#cbd5e1" radius={[4, 4, 0, 0]} name="Messages Sent" />
+                <Area type="monotone" dataKey="sent" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSent)" name="Messages Sent" />
+                <Bar dataKey="failed" fill="#fda4af" radius={[4, 4, 0, 0]} name="Failed Sends" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
