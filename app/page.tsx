@@ -221,7 +221,6 @@ export default async function LandingPage() {
                 "MemberFlow doubled our new member activation rate in the first week. The automated welcome sequences are a game changer."
               </p>
               <p className="text-slate-500 mt-4 font-semibold">- Alex K., Crypto Trading Community Founder</p>
-              </div>
             </div>
           </div>
         </section>
